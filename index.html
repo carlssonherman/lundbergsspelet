@@ -246,7 +246,7 @@
     </div>
   </div>
 
-  <!-- Sound effects (no catch-sound anymore) -->
+  <!-- Sound effects (no catch-sound, only 1up/boom/gameover/music) -->
   <audio id="oneup-sound" src="1up.mp3" preload="auto"></audio>
   <audio id="boom-sound" src="boom.mp3" preload="auto"></audio>
   <audio id="gameover-sound" src="gameover.mp3" preload="auto"></audio>
@@ -279,48 +279,10 @@
     const gameoverSound = document.getElementById("gameover-sound");
     const gameplayMusic = document.getElementById("gameplay-music");
 
-    // Make sure audio elements are loaded
-    oneUpSound.load();
-    boomSound.load();
-    gameoverSound.load();
-    gameplayMusic.load();
-
-    // Warm-up / pre-decode sounds once after first user interaction
-    let soundsWarmedUp = false;
-    function warmupSounds() {
-      if (soundsWarmedUp) return;
-      soundsWarmedUp = true;
-
-      const audios = [oneUpSound, boomSound, gameoverSound, gameplayMusic];
-
-      audios.forEach(audio => {
-        try {
-          const oldVol = audio.volume;
-          audio.volume = 0;
-          const p = audio.play();
-          if (p && p.then) {
-            p.then(() => {
-              audio.pause();
-              audio.currentTime = 0;
-              audio.volume = oldVol;
-            }).catch(() => {
-              audio.volume = oldVol;
-            });
-          } else {
-            audio.pause();
-            audio.currentTime = 0;
-            audio.volume = oldVol;
-          }
-        } catch (e) {
-          // ignore warmup failures
-        }
-      });
-    }
-
     const GAME_WIDTH = 360;
     const GAME_HEIGHT = 640;
 
-    /* Fullscreen Canvas – fill both width and height (non-uniform scale) */
+    /* Fullscreen Canvas – fill entire screen (non-uniform scale) */
     function resize() {
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -406,6 +368,21 @@
         const b = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(s.phase));
         ctx.fillStyle = `rgba(255,255,255,${b})`;
         ctx.fillRect(s.x, s.y, 2, 2);
+      }
+    }
+
+    /* Crumbs */
+    let crumbs = [];
+    function spawnCrumbs(x,y,color){
+      for(let i=0;i<8;i++){
+        crumbs.push({
+          x,
+          y,
+          vx:(Math.random()-0.5)*120,
+          vy:(Math.random()-0.5)*120,
+          life:0.6+Math.random()*0.3,
+          color
+        });
       }
     }
 
@@ -506,6 +483,8 @@
       timeAlive=0;
       spawnTimer=0;
 
+      crumbs = [];
+
       updateLivesUI();
       scoreNumberEl.textContent=score;
       initStars();
@@ -581,6 +560,7 @@
       messageEl.style.display="flex";
 
       obstacles=[];
+      crumbs=[];
     }
 
     /* Santa / Lucia fly-by */
@@ -618,7 +598,7 @@
       }
     }
 
-    /* Gameplay – no crumbs, no catch-sound */
+    /* Gameplay – with crumbs, but still no catch-sound */
     function updateGame(dt){
       timeAlive+=dt;
       const difficulty = Math.min(timeAlive/30,1);
@@ -652,10 +632,15 @@
 
         // Collision with player
         if (hitOverlap(player, o)) {
+          const cx = o.x + o.width/2;
+          const cy = o.y + o.height/2;
 
           if(o.type==="bun"){
             score++;
             scoreNumberEl.textContent=score;
+
+            // orange crumbs on catch
+            spawnCrumbs(cx, cy, "orange");
 
             if(score%10===0){
               lives++;
@@ -663,12 +648,14 @@
               oneUpSound.play();
               updateLivesUI();
             }
-            // no regular catch sound anymore
           } else {
+            // enemy hit: lose life + boom + brown crumbs
             lives--;
             boomSound.currentTime=0;
             boomSound.play();
             updateLivesUI();
+
+            spawnCrumbs(cx, cy, "brown");
 
             if(lives<=0){
               endGame();
@@ -678,12 +665,16 @@
 
           remove = true;
         }
-        // Missed bun off-screen
+        // Missed bun off-screen -> life lost + brown crumbs, but NO sound
         else if (o.y > GAME_HEIGHT) {
           if(o.type==="bun"){
             lives--;
-            boomSound.currentTime=0;
-            boomSound.play();
+
+            // spawn brown crumbs at bottom-ish position
+            const cxBottom = o.x + o.width/2;
+            const cyBottom = GAME_HEIGHT - 5;
+            spawnCrumbs(cxBottom, cyBottom, "brown");
+
             updateLivesUI();
             if(lives<=0){
               endGame();
@@ -699,6 +690,14 @@
         }
       }
       obstacles.length = writeIndex;
+
+      // Update crumbs
+      for (let c of crumbs) {
+        c.x += c.vx * dt;
+        c.y += c.vy * dt;
+        c.life -= dt;
+      }
+      crumbs = crumbs.filter(c => c.life > 0);
     }
 
     function draw(){
@@ -722,6 +721,12 @@
         const w = SANTA_WIDTH || santa.img.width * SANTA_SCALE || 80;
         const h = SANTA_HEIGHT || santa.img.height * SANTA_SCALE || 32;
         ctx.drawImage(santa.img,santa.x,santa.y,w,h);
+      }
+
+      // Draw crumbs as pixel chunks
+      for(let c of crumbs){
+        ctx.fillStyle = c.color==="orange" ? "#ffb746" : "#8c5a32";
+        ctx.fillRect(Math.round(c.x),Math.round(c.y),3,3);
       }
 
       if(gameState==="playing"){
@@ -787,7 +792,6 @@
     });
 
     startBtn.addEventListener("click",()=>{
-      warmupSounds();      // pre-decode remaining sounds on first tap
       playIntroSequence();
     });
 
