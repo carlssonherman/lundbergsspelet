@@ -171,7 +171,7 @@
     }
 
     .player-choice img {
-      width: 22vw;          /* scales with viewport width */
+      width: 25vw;          /* scales with viewport width */
       max-width: 140px;     /* cap at old size */
       height: auto;         /* keep aspect ratio */
       image-rendering: pixelated;
@@ -388,6 +388,15 @@
       }
     }
 
+    function updateCrumbs(dt) {
+      for (let c of crumbs) {
+        c.x += c.vx * dt;
+        c.y += c.vy * dt;
+        c.life -= dt;
+      }
+      crumbs = crumbs.filter(c => c.life > 0);
+    }
+
     /* Music helpers */
     function startGameplayMusic() {
       gameplayMusic.volume = 0.8;
@@ -558,11 +567,25 @@
       gameoverSound.currentTime=0;
       gameoverSound.play();
 
-      messageTextEl.innerHTML = `Du lyckades fånga<br>${score} lussekatter`;
-      messageEl.style.display="flex";
+      // Explode all remaining buns/enemies into crumbs
+      for (let o of obstacles) {
+        const cx = o.x + o.width / 2;
+        const cy = o.y + o.height / 2;
+        const color = (o.type === "bun") ? "orange" : "brown";
+        spawnCrumbs(cx, cy, color);
+      }
+      obstacles = []; // remove them from screen
 
-      obstacles=[];
-      crumbs=[];
+      // Hide game over UI for a short while so crumbs can animate
+      messageEl.style.display = "none";
+
+      setTimeout(() => {
+        // Only show if we're still in gameover (not restarted already)
+        if (gameState === "gameover") {
+          messageTextEl.innerHTML = `Du lyckades fånga<br>${score} lussekatter`;
+          messageEl.style.display="flex";
+        }
+      }, 900); // delay so crumbs can crumble
     }
 
     /* Santa / Lucia fly-by */
@@ -692,14 +715,6 @@
         }
       }
       obstacles.length = writeIndex;
-
-      // Update crumbs
-      for (let c of crumbs) {
-        c.x += c.vx * dt;
-        c.y += c.vy * dt;
-        c.life -= dt;
-      }
-      crumbs = crumbs.filter(c => c.life > 0);
     }
 
     function draw(){
@@ -731,13 +746,17 @@
         ctx.fillRect(Math.round(c.x),Math.round(c.y),3,3);
       }
 
-      if(gameState==="playing"){
+      // Draw player in both playing and gameover
+      if(gameState==="playing" || gameState==="gameover"){
         ctx.drawImage(currentPlayerImg,
           player.x-player.width/2,
           player.y-player.height/2,
           player.width,player.height
         );
+      }
 
+      // Draw buns only while playing
+      if(gameState==="playing"){
         for(let o of obstacles){
           const img=(o.type==="enemy")?enemyImg:bunImg;
           ctx.drawImage(img,o.x,o.y,o.width,o.height);
@@ -751,6 +770,7 @@
 
       updateStars(dt);
       updateSanta(dt);
+      updateCrumbs(dt);   // <- crumbs now animate in all states
 
       if(gameState==="playing"){
         updateGame(dt);
