@@ -50,15 +50,15 @@
       touch-action: none;
     }
 
-    /* Black overlay for background tone-in */
+    /* Black overlay element – now only used as transparent layer (no global fades) */
     #bg-fade {
       position: fixed;
       inset: 0;
       background: #000;
       z-index: 5;
       pointer-events: none;
-      opacity: 1;
-      transition: opacity 1.5s ease-out;
+      opacity: 0; /* default transparent */
+      transition: opacity 0.5s ease-out;
     }
     #bg-fade.hidden {
       opacity: 0;
@@ -263,8 +263,8 @@
     <canvas id="game"></canvas>
   </div>
 
-  <!-- Background fade overlay -->
-  <div id="bg-fade"></div>
+  <!-- Overlay (currently always transparent, kept for flexibility) -->
+  <div id="bg-fade" class="hidden"></div>
 
   <!-- HUD -->
   <div id="overlay">
@@ -385,9 +385,6 @@
       imagesLoaded++;
       if (!assetsReady && imagesLoaded >= TOTAL_IMAGES) {
         assetsReady = true;
-        // When everything is loaded, go to start screen
-        resetGame();
-        setGameState("start");
       }
     }
 
@@ -491,6 +488,13 @@
       gameplayMusic.currentTime = 0;
     }
 
+    /* Background intro animation for Lundbergs.png (loading -> start) */
+    let bgIntro = {
+      active: false,
+      timer: 0,
+      duration: 1.2  // seconds
+    };
+
     /* Game state */
     let lastTime = 0;
     let player;
@@ -510,8 +514,9 @@
     // states: "loading", "start", "intro", "select", "playing", "gameover"
     let gameState = "loading";
 
-    // loading screen timer
+    // loading screen timer (so "Hämtar Saffran..." is visible for a bit)
     let loadingTimer = 0;
+    const MIN_LOADING_TIME = 0.8; // seconds
 
     /* Intro sequence */
     const introLines = [
@@ -522,7 +527,6 @@
     ];
 
     function playIntroSequence() {
-
       gameState = "intro";
       startScreenEl.style.display = "flex";
       selectScreenEl.style.display = "none";
@@ -588,28 +592,17 @@
       messageEl.style.display="none";
     }
 
-    /* Start screen animation sequence:
-       1) Tone in background (bg-fade goes from 1 -> 0)
-       2) Logo left-to-right reveal
-       3) Start button fade-in
-    */
+    /* Start screen animation sequence (logo + button only) */
     function runStartScreenAnimations() {
       // Reset logo animation state
       document.body.classList.remove('logo-anim');
       startBtn.classList.remove('show');
 
-      // Reset bg fade to opaque then fade out
-      bgFadeEl.classList.remove('hidden');
-      // force reflow so the transition always runs
-      void bgFadeEl.offsetWidth;
-      bgFadeEl.classList.add('hidden');
-
-      // Start logo reveal slightly after fade begins
+      // Kick logo + button animation with a tiny delay so DOM is settled
       setTimeout(() => {
         document.body.classList.add('logo-anim');
-      }, 400);
+      }, 500);
 
-      // Start button fade-in after logo reveal
       setTimeout(() => {
         startBtn.classList.add('show');
       }, 800);
@@ -649,7 +642,7 @@
         startLogoEl.style.display = "block";
         startBtn.style.display = "inline-block";
 
-        // re-run the frontpage animation whenever we enter start
+        // Start logo + button animations
         runStartScreenAnimations();
       }
     }
@@ -675,7 +668,6 @@
     }
 
     function endGame(){
-      // ensure UI state updates (hides HUD)
       setGameState("gameover");
 
       stopGameplayMusic();
@@ -690,18 +682,17 @@
         const color = (o.type === "bun") ? "orange" : "brown";
         spawnCrumbs(cx, cy, color);
       }
-      obstacles = []; // remove them from screen
+      obstacles = [];
 
-      // Hide game over UI for a short while so crumbs can animate
+      // Delay game over message so crumbs can crumble
       messageEl.style.display = "none";
 
       setTimeout(() => {
-        // Only show if we're still in gameover (not restarted already)
         if (gameState === "gameover") {
           messageTextEl.innerHTML = `Du lyckades fånga<br>${score} lussekatter`;
           messageEl.style.display="flex";
         }
-      }, 900); // delay so crumbs can crumble
+      }, 900);
     }
 
     /* Santa / Lucia fly-by */
@@ -714,7 +705,6 @@
       if(!santa.active){
         santaTimer += dt;
         if(santaTimer >= nextSantaTime){
-          // Pick Santa OR Lucia randomly
           const chosenImg = (Math.random() < 0.5 ? santaImg : luciaImg);
           santa.img = chosenImg;
 
@@ -726,7 +716,7 @@
 
           santa.active = true;
           santa.x = GAME_WIDTH + w;
-          santa.y = GAME_HEIGHT - 20 - h; /* 20px above bottom */
+          santa.y = GAME_HEIGHT - 20 - h;
           santaTimer = 0;
           nextSantaTime = 4 + Math.random()*8;
         }
@@ -766,12 +756,10 @@
       for (let i = 0; i < obstacles.length; i++) {
         const o = obstacles[i];
 
-        // Move obstacle
         o.y += (o.speed + speedBoost*0.5)*dt;
 
         let remove = false;
 
-        // Collision with player
         if (hitOverlap(player, o)){
           const cx = o.x + o.width/2;
           const cy = o.y + o.height/2;
@@ -780,7 +768,6 @@
             score++;
             scoreNumberEl.textContent=score;
 
-            // orange crumbs on catch
             spawnCrumbs(cx, cy, "orange");
 
             if(score%10===0){
@@ -790,7 +777,6 @@
               updateLivesUI();
             }
           } else {
-            // enemy hit: lose life + boom + brown crumbs
             lives--;
             boomSound.currentTime=0;
             boomSound.play();
@@ -800,18 +786,16 @@
 
             if(lives<=0){
               endGame();
-              return; // stop processing this frame
+              return;
             }
           }
 
           remove = true;
         }
-        // Missed bun off-screen -> life lost + brown crumbs, but NO sound
         else if (o.y > GAME_HEIGHT) {
           if(o.type==="bun"){
             lives--;
 
-            // spawn brown crumbs at bottom-ish position
             const cxBottom = o.x + o.width/2;
             const cyBottom = GAME_HEIGHT - 5;
             spawnCrumbs(cxBottom, cyBottom, "brown");
@@ -825,7 +809,6 @@
           remove = true;
         }
 
-        // Keep obstacle if not removed
         if (!remove) {
           obstacles[writeIndex++] = o;
         }
@@ -838,36 +821,69 @@
 
       // LOADING SCREEN
       if (gameState === "loading") {
-        // black bg
-        ctx.fillStyle = "#000";
+        ctx.fillStyle = "#050711";
         ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
-        // stars
         drawStars();
 
-        // LADDAR + animated dots
+        // "Hämtar Saffran" + animated dots in *screen* pixels (always 18px)
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+
         ctx.fillStyle = "#ffffff";
-        ctx.font = "20px Silkscreen";
-        ctx.textAlign = "center";
+        ctx.font = "18px Silkscreen, monospace";
         ctx.textBaseline = "middle";
 
-        const dotsCount = Math.floor(loadingTimer * 2) % 4; // 0–3
+        const baseText = "Hämtar Saffran";
+        const dotsCount = Math.floor(loadingTimer * 2) % 4;
         const dots = ".".repeat(dotsCount);
-        ctx.fillText("hämtar saffran, mjölk och mjöl" + dots, GAME_WIDTH/2, GAME_HEIGHT/2);
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        ctx.textAlign = "center";
+        ctx.fillText(baseText, centerX, centerY);
+
+        const baseWidth = ctx.measureText(baseText).width;
+
+        ctx.textAlign = "left";
+        const dotsX = centerX + baseWidth / 2 + 4;
+        ctx.fillText(dots, dotsX, centerY);
+
+        ctx.restore();
         return;
       }
 
-      // All other states: draw normal background
-
+      // BACKGROUND (with optional intro animation)
       if(bgImg.complete){
         const scale=GAME_WIDTH/bgImg.width;
         const h=bgImg.height*scale;
-        const y=GAME_HEIGHT-h;
-        if(y>0){
+        const finalY = GAME_HEIGHT - h;
+
+        let topY = finalY;
+        let alpha = 1;
+
+       if (bgIntro.active) {
+  const t = Math.min(bgIntro.timer / bgIntro.duration, 1);
+  const ease = 1 - Math.pow(1 - t, 3);
+
+  const tinyOffset = 10; // pixels to slide upward
+
+  // Start 20px below final, slide into place
+  topY = finalY + (tinyOffset * (1 - ease));
+
+  alpha = ease;
+}
+
+        if (topY > 0) {
           ctx.fillStyle="#050711";
-          ctx.fillRect(0,0,GAME_WIDTH,y);
+          ctx.fillRect(0,0,GAME_WIDTH,topY);
         }
-        ctx.drawImage(bgImg,0,y,GAME_WIDTH,h);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(bgImg,0,topY,GAME_WIDTH,h);
+        ctx.restore();
       }
 
       // Starry background on all screens
@@ -911,8 +927,27 @@
       updateSanta(dt);
       updateCrumbs(dt);
 
+      // Update background intro animation timer
+      if (bgIntro.active) {
+        bgIntro.timer += dt;
+        if (bgIntro.timer >= bgIntro.duration) {
+          bgIntro.active = false;
+        }
+      }
+
       if (gameState === "loading") {
         loadingTimer += dt;
+
+        // When assets are ready AND we've shown loading for a bit, move on
+        if (assetsReady && loadingTimer > MIN_LOADING_TIME) {
+          resetGame();
+
+          // start Lundbergs intro animation
+          bgIntro.active = true;
+          bgIntro.timer = 0;
+
+          setGameState("start");
+        }
       }
 
       if(gameState==="playing"){
@@ -972,7 +1007,7 @@
 
     /* Begin */
     overlayEl.style.display = "none"; // hide HUD during loading
-    initStars();                      // stars visible already on loading screen
+    initStars();                      // stars visible on loading screen immediately
     requestAnimationFrame(loop);
 
   </script>
