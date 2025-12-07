@@ -50,6 +50,20 @@
       touch-action: none;
     }
 
+    /* Black overlay for background tone-in */
+    #bg-fade {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 1.5s ease-out;
+    }
+    #bg-fade.hidden {
+      opacity: 0;
+    }
+
     /* HUD */
     #overlay {
       position: fixed;
@@ -105,6 +119,29 @@
       width: 70vw;
       max-width: 380px;
       image-rendering: pixelated;
+
+      /* animation initial state */
+      opacity: 0;
+      -webkit-clip-path: inset(0 100% 0 0);
+      clip-path: inset(0 100% 0 0);
+    }
+
+    /* Logo reveal when body has .logo-anim */
+    body.logo-anim #start-logo .logo-image {
+      animation: logoReveal 0.4s ease-out forwards;
+    }
+
+    @keyframes logoReveal {
+      0% {
+        opacity: 1;
+        -webkit-clip-path: inset(0 100% 0 0);
+        clip-path: inset(0 100% 0 0);
+      }
+      100% {
+        opacity: 1;
+        -webkit-clip-path: inset(0 0 0 0);
+        clip-path: inset(0 0 0 0);
+      }
     }
 
     /* Intro text */
@@ -145,6 +182,25 @@
       border-radius: 6px;
       font-size: 18px;
       cursor: pointer;
+    }
+
+    /* Start button animation */
+    #start-btn {
+      opacity: 0;
+    }
+    #start-btn.show {
+      animation: startBtnFade 0.2s ease-out forwards;
+    }
+
+    @keyframes startBtnFade {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* Player select */
@@ -206,6 +262,9 @@
   <div id="game-container">
     <canvas id="game"></canvas>
   </div>
+
+  <!-- Background fade overlay -->
+  <div id="bg-fade"></div>
 
   <!-- HUD -->
   <div id="overlay">
@@ -275,6 +334,7 @@
 
     const startLogoEl = document.getElementById("start-logo");
     const startIntroEl = document.getElementById("start-intro-text");
+    const bgFadeEl = document.getElementById("bg-fade");
 
     const oneUpSound  = document.getElementById("oneup-sound");
     const boomSound   = document.getElementById("boom-sound");
@@ -430,9 +490,9 @@
 
     /* Intro sequence */
     const introLines = [
-      "Adventsmorgon I Gröndal.",
-      "På Lundbergs jobbar bagarna för fullt.",
-      "Hjälp dom att fånga de nybakade lussekatterna.",
+      "Adventsmorgon i Gröndal.",
+      "På Lundbergs bakas det för fullt.",
+      "Hjälp till att fånga de nybakade lussekatterna.",
       "Men akta dig för de vidbrända."
     ];
 
@@ -503,6 +563,33 @@
       messageEl.style.display="none";
     }
 
+    /* Start screen animation sequence:
+       1) Tone in background (bg-fade goes from 1 -> 0)
+       2) Logo left-to-right reveal
+       3) Start button fade-in
+    */
+    function runStartScreenAnimations() {
+      // Reset logo animation state
+      document.body.classList.remove('logo-anim');
+      startBtn.classList.remove('show');
+
+      // Reset bg fade to opaque then fade out
+      bgFadeEl.classList.remove('hidden');
+      // force reflow so the transition always runs
+      void bgFadeEl.offsetWidth;
+      bgFadeEl.classList.add('hidden');
+
+      // Start logo reveal slightly after fade begins
+      setTimeout(() => {
+        document.body.classList.add('logo-anim');
+      }, 400);
+
+      // Start button fade-in after logo reveal
+      setTimeout(() => {
+        startBtn.classList.add('show');
+      }, 800);
+    }
+
     /* Screen switching */
     function setGameState(state){
       gameState = state;
@@ -536,6 +623,9 @@
         startIntroEl.innerHTML = "";
         startLogoEl.style.display = "block";
         startBtn.style.display = "inline-block";
+
+        // re-run the frontpage animation whenever we return to start
+        runStartScreenAnimations();
       }
     }
 
