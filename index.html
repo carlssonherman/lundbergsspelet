@@ -176,8 +176,8 @@
 
     /* Player select */
     #select-title {
-      font-size: 22px;
-      margin-bottom: 16px;
+      font-size: 18px;
+      margin-bottom: 30px;
       text-shadow: 0 0 6px #000;
     }
 
@@ -203,11 +203,14 @@
       image-rendering: pixelated;
     }
 
-    .player-choice span {
-      margin-top: 6px;
-      font-size: 18px;
-      text-shadow: 0 0 4px #000;
-    }
+ .player-choice span {
+  font-family: 'Silkscreen', monospace !important;
+  font-size: 18px;
+  color: #fff;
+  margin-top: 10px; 
+  text-shadow: 0 0 4px #000;
+  text-transform: uppercase;
+}
 
     #select-screen {
       opacity: 0;
@@ -540,7 +543,7 @@
     const introLines = [
       "På Lundbergs är lussebaket i full gång.",
       "Fånga de nybakade lussekatterna, innan de hamnar på marken.",
-      "Se upp för de som blivit brända."
+      "Se upp för de vidbrända."
     ];
 
     function playIntroSequence() {
