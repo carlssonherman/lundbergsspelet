@@ -50,6 +50,20 @@
       touch-action: none;
     }
 
+    /* Black overlay for background tone-in */
+    #bg-fade {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 1.5s ease-out;
+    }
+    #bg-fade.hidden {
+      opacity: 0;
+    }
+
     /* HUD */
     #overlay {
       position: fixed;
@@ -105,6 +119,29 @@
       width: 70vw;
       max-width: 380px;
       image-rendering: pixelated;
+
+      /* animation initial state */
+      opacity: 0;
+      -webkit-clip-path: inset(0 100% 0 0);
+      clip-path: inset(0 100% 0 0);
+    }
+
+    /* Logo reveal when body has .logo-anim */
+    body.logo-anim #start-logo .logo-image {
+      animation: logoReveal 0.4s ease-out forwards;
+    }
+
+    @keyframes logoReveal {
+      0% {
+        opacity: 1;
+        -webkit-clip-path: inset(0 100% 0 0);
+        clip-path: inset(0 100% 0 0);
+      }
+      100% {
+        opacity: 1;
+        -webkit-clip-path: inset(0 0 0 0);
+        clip-path: inset(0 0 0 0);
+      }
     }
 
     /* Intro text */
@@ -147,6 +184,25 @@
       cursor: pointer;
     }
 
+    /* Start button animation */
+    #start-btn {
+      opacity: 0;
+    }
+    #start-btn.show {
+      animation: startBtnFade 0.2s ease-out forwards;
+    }
+
+    @keyframes startBtnFade {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     /* Player select */
     #select-title {
       font-size: 22px;
@@ -171,9 +227,9 @@
     }
 
     .player-choice img {
-      width: 25vw;
-      max-width: 140px;
-      height: auto;
+      width: 25vw;          /* scales with viewport width */
+      max-width: 140px;     /* cap at old size */
+      height: auto;         /* keep aspect ratio */
       image-rendering: pixelated;
     }
 
@@ -199,51 +255,6 @@
       text-shadow: 2px 2px 0 #000;
     }
 
-    /* --- START SCREEN ANIMATIONS --- */
-
-    /* default hidden */
-    #start-logo,
-    #start-btn {
-      opacity: 0;
-    }
-
-    /* when body has .start-ready, animate logo then button */
-    body.start-ready #start-logo {
-      animation: logoReveal 1.2s ease-out forwards;
-      animation-delay: 0.5s;
-    }
-
-    body.start-ready #start-btn {
-      animation: startBtnFade 0.6s ease-out forwards;
-      animation-delay: 1.9s;
-    }
-
-    @keyframes logoReveal {
-      0% {
-        opacity: 0;
-        clip-path: inset(0 100% 0 0);
-      }
-      50% {
-        opacity: 1;
-        clip-path: inset(0 50% 0 0);
-      }
-      100% {
-        opacity: 1;
-        clip-path: inset(0 0 0 0);
-      }
-    }
-
-    @keyframes startBtnFade {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
   </style>
 </head>
 <body>
@@ -251,6 +262,9 @@
   <div id="game-container">
     <canvas id="game"></canvas>
   </div>
+
+  <!-- Background fade overlay -->
+  <div id="bg-fade"></div>
 
   <!-- HUD -->
   <div id="overlay">
@@ -298,17 +312,14 @@
   <audio id="boom-sound" src="boom.mp3" preload="auto"></audio>
   <audio id="gameover-sound" src="gameover.mp3" preload="auto"></audio>
   <audio id="gameplay-music" src="gameplay.mp3" preload="auto" loop></audio>
-  <!-- UI click sound using catch.mp3 -->
-  <audio id="ui-click" src="catch.mp3" preload="auto"></audio>
 
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
 
+    // Prevent long-press context menu / text selection behavior
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('selectstart', (e) => e.preventDefault());
-
-    document.body.classList.add("start-ready");
 
     const scoreNumberEl = document.getElementById("score-number");
     const livesEl = document.getElementById("lives");
@@ -323,21 +334,18 @@
 
     const startLogoEl = document.getElementById("start-logo");
     const startIntroEl = document.getElementById("start-intro-text");
+    const bgFadeEl = document.getElementById("bg-fade");
+    const overlayEl = document.getElementById("overlay");
 
     const oneUpSound  = document.getElementById("oneup-sound");
     const boomSound   = document.getElementById("boom-sound");
     const gameoverSound = document.getElementById("gameover-sound");
     const gameplayMusic = document.getElementById("gameplay-music");
-    const uiClick = document.getElementById("ui-click");
-
-    function playUIClick() {
-      uiClick.currentTime = 0;
-      uiClick.play().catch(()=>{});
-    }
 
     const GAME_WIDTH = 360;
     const GAME_HEIGHT = 640;
 
+    /* Fullscreen Canvas – fill entire screen (non-uniform scale) */
     function resize() {
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -357,35 +365,56 @@
 
     /* Images */
     const playerMattiasImg = new Image();
-    playerMattiasImg.src = "gfx-mattias.png";
     const playerPerImg = new Image();
-    playerPerImg.src = "gfx-per.png";
-
-    let currentPlayerImg = playerMattiasImg;
-
     const bunImg = new Image();
-    bunImg.src = "gfx-lussekatt.png";
     const enemyImg = new Image();
-    enemyImg.src = "gfx-brand.png";
     const bgImg = new Image();
-    bgImg.src = "gfx-lundbergs.png";
-
-    /* Santa & Lucia */
     const santaImg = new Image();
-    santaImg.src = "gfx-santa.png";
-
     const luciaImg = new Image();
-    luciaImg.src = "gfx-lucia.png";
 
     const SANTA_SCALE = 0.25;
     let SANTA_WIDTH = 0;
     let SANTA_HEIGHT = 0;
 
+    // Asset loading tracking
+    let imagesLoaded = 0;
+    const TOTAL_IMAGES = 7;
+    let assetsReady = false;
+
+    function onAssetLoaded() {
+      imagesLoaded++;
+      if (!assetsReady && imagesLoaded >= TOTAL_IMAGES) {
+        assetsReady = true;
+        // When everything is loaded, go to start screen
+        resetGame();
+        setGameState("start");
+      }
+    }
+
+    playerMattiasImg.onload = onAssetLoaded;
+    playerPerImg.onload = onAssetLoaded;
+    bunImg.onload = onAssetLoaded;
+    enemyImg.onload = onAssetLoaded;
+    bgImg.onload = onAssetLoaded;
+    luciaImg.onload = onAssetLoaded;
     santaImg.onload = () => {
       SANTA_WIDTH = santaImg.width * SANTA_SCALE;
       SANTA_HEIGHT = santaImg.height * SANTA_SCALE;
+      onAssetLoaded();
     };
 
+    // Set sources AFTER onload handlers
+    playerMattiasImg.src = "gfx-mattias.png";
+    playerPerImg.src = "gfx-per.png";
+    bunImg.src = "gfx-lussekatt.png";
+    enemyImg.src = "gfx-brand.png";
+    bgImg.src = "gfx-lundbergs.png";
+    santaImg.src = "gfx-santa.png";
+    luciaImg.src = "gfx-lucia.png";
+
+    let currentPlayerImg = playerMattiasImg;
+
+    /* Santa & Lucia state */
     let santa = {
       active: false,
       img: santaImg,
@@ -396,7 +425,7 @@
     let santaTimer = 0;
     let nextSantaTime = 4 + Math.random()*8;
 
-    /* Stars */
+    /* Stars (background) */
     const STAR_COUNT = 40;
     let stars = [];
 
@@ -426,9 +455,6 @@
       }
     }
 
-    /* Background fade */
-    let bgFade = 0;
-
     /* Crumbs */
     let crumbs = [];
     function spawnCrumbs(x,y,color){
@@ -453,7 +479,7 @@
       crumbs = crumbs.filter(c => c.life > 0);
     }
 
-    /* Music */
+    /* Music helpers */
     function startGameplayMusic() {
       gameplayMusic.volume = 0.8;
       gameplayMusic.currentTime = 0;
@@ -481,13 +507,17 @@
 
     const PLAYER_SPEED = 220;
 
-    // states: "start", "intro", "select", "playing", "gameover"
-    let gameState = "start";
+    // states: "loading", "start", "intro", "select", "playing", "gameover"
+    let gameState = "loading";
 
+    // loading screen timer
+    let loadingTimer = 0;
+
+    /* Intro sequence */
     const introLines = [
-      "Adventsmorgon I Gröndal.",
-      "På Lundbergs jobbar bagarna för fullt.",
-      "Hjälp dom att fånga de nybakade lussekatterna.",
+      "Adventsmorgon i Gröndal.",
+      "På Lundbergs bakas det för fullt.",
+      "Hjälp till att fånga de nybakade lussekatterna.",
       "Men akta dig för de vidbrända."
     ];
 
@@ -496,12 +526,13 @@
       gameState = "intro";
       startScreenEl.style.display = "flex";
       selectScreenEl.style.display = "none";
-      document.getElementById("overlay").style.display = "none";
+      overlayEl.style.display = "none";
       messageEl.style.display = "none";
 
       startIntroEl.innerHTML = "";
       startIntroEl.style.display = "block";
 
+      // Hide logo + button instantly
       startLogoEl.style.display = "none";
       startBtn.style.display = "none";
 
@@ -557,12 +588,42 @@
       messageEl.style.display="none";
     }
 
+    /* Start screen animation sequence:
+       1) Tone in background (bg-fade goes from 1 -> 0)
+       2) Logo left-to-right reveal
+       3) Start button fade-in
+    */
+    function runStartScreenAnimations() {
+      // Reset logo animation state
+      document.body.classList.remove('logo-anim');
+      startBtn.classList.remove('show');
+
+      // Reset bg fade to opaque then fade out
+      bgFadeEl.classList.remove('hidden');
+      // force reflow so the transition always runs
+      void bgFadeEl.offsetWidth;
+      bgFadeEl.classList.add('hidden');
+
+      // Start logo reveal slightly after fade begins
+      setTimeout(() => {
+        document.body.classList.add('logo-anim');
+      }, 400);
+
+      // Start button fade-in after logo reveal
+      setTimeout(() => {
+        startBtn.classList.add('show');
+      }, 800);
+    }
+
+    /* Screen switching */
     function setGameState(state){
       gameState = state;
 
+      /* Start + intro screens */
       startScreenEl.style.display =
         (state === "start" || state === "intro") ? "flex" : "none";
 
+      /* Player select screen with fade-in */
       if (state === "select") {
         selectScreenEl.style.display = "flex";
         selectScreenEl.classList.remove("visible");
@@ -574,8 +635,8 @@
         selectScreenEl.style.display = "none";
       }
 
-      // HUD only while playing
-      document.getElementById("overlay").style.display =
+      /* HUD visible only while playing */
+      overlayEl.style.display =
         (state === "playing") ? "flex" : "none";
 
       if (state !== "gameover") {
@@ -587,6 +648,9 @@
         startIntroEl.innerHTML = "";
         startLogoEl.style.display = "block";
         startBtn.style.display = "inline-block";
+
+        // re-run the frontpage animation whenever we enter start
+        runStartScreenAnimations();
       }
     }
 
@@ -611,7 +675,7 @@
     }
 
     function endGame(){
-      // ensure UI state (including hiding HUD) is applied
+      // ensure UI state updates (hides HUD)
       setGameState("gameover");
 
       stopGameplayMusic();
@@ -626,18 +690,21 @@
         const color = (o.type === "bun") ? "orange" : "brown";
         spawnCrumbs(cx, cy, color);
       }
-      obstacles = [];
+      obstacles = []; // remove them from screen
 
+      // Hide game over UI for a short while so crumbs can animate
       messageEl.style.display = "none";
 
       setTimeout(() => {
+        // Only show if we're still in gameover (not restarted already)
         if (gameState === "gameover") {
           messageTextEl.innerHTML = `Du lyckades fånga<br>${score} lussekatter`;
           messageEl.style.display="flex";
         }
-      }, 900);
+      }, 900); // delay so crumbs can crumble
     }
 
+    /* Santa / Lucia fly-by */
     function updateSanta(dt){
       if (!(gameState==="start"||gameState==="intro"||gameState==="select")){
         santa.active=false;
@@ -647,6 +714,7 @@
       if(!santa.active){
         santaTimer += dt;
         if(santaTimer >= nextSantaTime){
+          // Pick Santa OR Lucia randomly
           const chosenImg = (Math.random() < 0.5 ? santaImg : luciaImg);
           santa.img = chosenImg;
 
@@ -658,7 +726,7 @@
 
           santa.active = true;
           santa.x = GAME_WIDTH + w;
-          santa.y = GAME_HEIGHT - 20 - h;
+          santa.y = GAME_HEIGHT - 20 - h; /* 20px above bottom */
           santaTimer = 0;
           nextSantaTime = 4 + Math.random()*8;
         }
@@ -671,6 +739,7 @@
       }
     }
 
+    /* Gameplay – with crumbs */
     function updateGame(dt){
       timeAlive+=dt;
       const difficulty = Math.min(timeAlive/30,1);
@@ -683,6 +752,7 @@
       if(player.x<half) player.x=half;
       if(player.x>GAME_WIDTH-half) player.x=GAME_WIDTH-half;
 
+      // Spawn (dt-safe)
       spawnTimer += dt;
       if(spawnTimer >= spawnInterval){
         spawnTimer -= spawnInterval;
@@ -691,14 +761,17 @@
 
       const speedBoost = 120 + (420-120)*difficulty;
 
+      // Single pass: move + collide + keep/kill
       let writeIndex = 0;
       for (let i = 0; i < obstacles.length; i++) {
         const o = obstacles[i];
 
+        // Move obstacle
         o.y += (o.speed + speedBoost*0.5)*dt;
 
         let remove = false;
 
+        // Collision with player
         if (hitOverlap(player, o)){
           const cx = o.x + o.width/2;
           const cy = o.y + o.height/2;
@@ -707,6 +780,7 @@
             score++;
             scoreNumberEl.textContent=score;
 
+            // orange crumbs on catch
             spawnCrumbs(cx, cy, "orange");
 
             if(score%10===0){
@@ -716,6 +790,7 @@
               updateLivesUI();
             }
           } else {
+            // enemy hit: lose life + boom + brown crumbs
             lives--;
             boomSound.currentTime=0;
             boomSound.play();
@@ -725,16 +800,18 @@
 
             if(lives<=0){
               endGame();
-              return;
+              return; // stop processing this frame
             }
           }
 
           remove = true;
         }
+        // Missed bun off-screen -> life lost + brown crumbs, but NO sound
         else if (o.y > GAME_HEIGHT) {
           if(o.type==="bun"){
             lives--;
 
+            // spawn brown crumbs at bottom-ish position
             const cxBottom = o.x + o.width/2;
             const cyBottom = GAME_HEIGHT - 5;
             spawnCrumbs(cxBottom, cyBottom, "brown");
@@ -748,6 +825,7 @@
           remove = true;
         }
 
+        // Keep obstacle if not removed
         if (!remove) {
           obstacles[writeIndex++] = o;
         }
@@ -758,6 +836,29 @@
     function draw(){
       ctx.clearRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
+      // LOADING SCREEN
+      if (gameState === "loading") {
+        // black bg
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+
+        // stars
+        drawStars();
+
+        // LADDAR + animated dots
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "20px Silkscreen";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const dotsCount = Math.floor(loadingTimer * 2) % 4; // 0–3
+        const dots = ".".repeat(dotsCount);
+        ctx.fillText("hämtar saffran, mjölk och mjöl" + dots, GAME_WIDTH/2, GAME_HEIGHT/2);
+        return;
+      }
+
+      // All other states: draw normal background
+
       if(bgImg.complete){
         const scale=GAME_WIDTH/bgImg.width;
         const h=bgImg.height*scale;
@@ -766,12 +867,10 @@
           ctx.fillStyle="#050711";
           ctx.fillRect(0,0,GAME_WIDTH,y);
         }
-        ctx.save();
-        ctx.globalAlpha = bgFade;
         ctx.drawImage(bgImg,0,y,GAME_WIDTH,h);
-        ctx.restore();
       }
 
+      // Starry background on all screens
       drawStars();
 
       if((gameState==="start"||gameState==="intro"||gameState==="select")&&santa.active){
@@ -780,11 +879,13 @@
         ctx.drawImage(santa.img,santa.x,santa.y,w,h);
       }
 
+      // Draw crumbs as pixel chunks
       for(let c of crumbs){
         ctx.fillStyle = c.color==="orange" ? "#ffb746" : "#8c5a32";
         ctx.fillRect(Math.round(c.x),Math.round(c.y),3,3);
       }
 
+      // Draw player in both playing and gameover
       if(gameState==="playing" || gameState==="gameover"){
         ctx.drawImage(currentPlayerImg,
           player.x-player.width/2,
@@ -793,6 +894,7 @@
         );
       }
 
+      // Draw buns only while playing
       if(gameState==="playing"){
         for(let o of obstacles){
           const img=(o.type==="enemy")?enemyImg:bunImg;
@@ -805,11 +907,13 @@
       const dt=(t-lastTime)/1000||0;
       lastTime=t;
 
-      bgFade = Math.min(bgFade + dt/1.5, 1);
-
       updateStars(dt);
       updateSanta(dt);
       updateCrumbs(dt);
+
+      if (gameState === "loading") {
+        loadingTimer += dt;
+      }
 
       if(gameState==="playing"){
         updateGame(dt);
@@ -819,6 +923,7 @@
       requestAnimationFrame(loop);
     }
 
+    /* Controls */
     canvas.addEventListener("pointerdown",e=>{
       const rect = canvas.getBoundingClientRect();
       const xGame = (e.clientX - rect.left) / rect.width * GAME_WIDTH;
@@ -847,19 +952,16 @@
     });
 
     restartBtn.addEventListener("click",()=>{
-      playUIClick();
       resetGame();
       setGameState("select");
     });
 
     startBtn.addEventListener("click",()=>{
-      playUIClick();
       playIntroSequence();
     });
 
     playerChoiceButtons.forEach(btn=>{
       btn.addEventListener("click",()=>{
-        playUIClick();
         currentPlayerImg =
           btn.dataset.player==="per" ? playerPerImg : playerMattiasImg;
         resetGame();
@@ -868,8 +970,9 @@
       });
     });
 
-    resetGame();
-    setGameState("start");
+    /* Begin */
+    overlayEl.style.display = "none"; // hide HUD during loading
+    initStars();                      // stars visible already on loading screen
     requestAnimationFrame(loop);
 
   </script>
