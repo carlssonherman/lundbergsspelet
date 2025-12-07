@@ -78,6 +78,17 @@
       z-index: 20;
       text-shadow: 0 0 4px #000;
       font-size: 14px;
+
+      /* Start hidden above the screen */
+      transform: translateY(-120%);
+      opacity: 0;
+      transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+    }
+
+    /* When gameplay starts */
+    #overlay.hud-visible {
+      transform: translateY(0);
+      opacity: 1;
     }
 
     #score {
@@ -520,9 +531,8 @@
 
     /* Intro sequence */
     const introLines = [
-      "Adventsmorgon i Gröndal.",
-      "På Lundbergs bakas det för fullt.",
-      "Hjälp till att fånga de nybakade lussekatterna.",
+      "Adventsmorgon i Gröndal, och på Lundbergs är lussebaket i full gång.",
+      "Fånga de nybakade lussekatterna innan de hamnar på marken.",
       "Men akta dig för de vidbrända."
     ];
 
@@ -530,7 +540,6 @@
       gameState = "intro";
       startScreenEl.style.display = "flex";
       selectScreenEl.style.display = "none";
-      overlayEl.style.display = "none";
       messageEl.style.display = "none";
 
       startIntroEl.innerHTML = "";
@@ -628,9 +637,12 @@
         selectScreenEl.style.display = "none";
       }
 
-      /* HUD visible only while playing */
-      overlayEl.style.display =
-        (state === "playing") ? "flex" : "none";
+      /* HUD visible only while playing (with slide animation) */
+      if (state === "playing") {
+        overlayEl.classList.add("hud-visible");
+      } else {
+        overlayEl.classList.remove("hud-visible");
+      }
 
       if (state !== "gameover") {
         messageEl.style.display = "none";
@@ -854,7 +866,7 @@
         return;
       }
 
-      // BACKGROUND (with optional intro animation)
+      // BACKGROUND (with fade-in only, no vertical motion)
       if(bgImg.complete){
         const scale=GAME_WIDTH/bgImg.width;
         const h=bgImg.height*scale;
@@ -863,17 +875,14 @@
         let topY = finalY;
         let alpha = 1;
 
-       if (bgIntro.active) {
-  const t = Math.min(bgIntro.timer / bgIntro.duration, 1);
-  const ease = 1 - Math.pow(1 - t, 3);
+        if (bgIntro.active) {
+          const t = Math.min(bgIntro.timer / bgIntro.duration, 1);
+          const ease = 1 - Math.pow(1 - t, 3);
 
-  const tinyOffset = 10; // pixels to slide upward
-
-  // Start 20px below final, slide into place
-  topY = finalY + (tinyOffset * (1 - ease));
-
-  alpha = ease;
-}
+          // No movement — only fade in
+          topY = finalY;
+          alpha = ease;
+        }
 
         if (topY > 0) {
           ctx.fillStyle="#050711";
@@ -1006,7 +1015,6 @@
     });
 
     /* Begin */
-    overlayEl.style.display = "none"; // hide HUD during loading
     initStars();                      // stars visible on loading screen immediately
     requestAnimationFrame(loop);
 
