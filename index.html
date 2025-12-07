@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8" />
   <title>Lussekaos på Lundbergs</title>
@@ -27,7 +27,7 @@
       color: #fff;
     }
 
-    /* Disable text selection & touch callouts everywhere */
+    /* Disable text selection everywhere */
     * {
       -webkit-touch-callout: none;
       -webkit-user-select: none;
@@ -50,20 +50,6 @@
       touch-action: none;
     }
 
-    /* Black overlay element – now only used as transparent layer (no global fades) */
-    #bg-fade {
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 5;
-      pointer-events: none;
-      opacity: 0; /* default transparent */
-      transition: opacity 0.5s ease-out;
-    }
-    #bg-fade.hidden {
-      opacity: 0;
-    }
-
     /* HUD */
     #overlay {
       position: fixed;
@@ -77,15 +63,13 @@
       pointer-events: none;
       z-index: 20;
       text-shadow: 0 0 4px #000;
-      font-size: 14px;
 
-      /* Start hidden above the screen */
+      /* slide in animation */
       transform: translateY(-120%);
       opacity: 0;
       transition: transform 0.4s ease-out, opacity 0.4s ease-out;
     }
 
-    /* When gameplay starts */
     #overlay.hud-visible {
       transform: translateY(0);
       opacity: 1;
@@ -98,8 +82,9 @@
       font-size: 18px;
     }
 
-    #score img, #lives img {
-      height: 22px;
+    #score img,
+    #lives img {
+      height: 18px;
       image-rendering: pixelated;
     }
 
@@ -126,43 +111,28 @@
       transform: translateY(-17vh);
     }
 
-    /* Logo */
+    /* Logo animation */
     #start-logo .logo-image {
       width: 70vw;
       max-width: 380px;
       image-rendering: pixelated;
-
-      /* animation initial state */
       opacity: 0;
-      -webkit-clip-path: inset(0 100% 0 0);
       clip-path: inset(0 100% 0 0);
     }
 
-    /* Logo reveal when body has .logo-anim */
     body.logo-anim #start-logo .logo-image {
       animation: logoReveal 0.4s ease-out forwards;
     }
 
     @keyframes logoReveal {
-      0% {
-        opacity: 1;
-        -webkit-clip-path: inset(0 100% 0 0);
-        clip-path: inset(0 100% 0 0);
-      }
-      100% {
-        opacity: 1;
-        -webkit-clip-path: inset(0 0 0 0);
-        clip-path: inset(0 0 0 0);
-      }
+      0% { opacity: 1; clip-path: inset(0 100% 0 0); }
+      100% { opacity: 1; clip-path: inset(0 0 0 0); }
     }
 
-    /* Intro text */
     #start-intro-text {
       max-width: 320px;
       font-size: 18px;
       line-height: 1.3;
-      text-shadow: 0 0 4px #000;
-      margin-bottom: 16px;
       display: none;
     }
 
@@ -176,13 +146,6 @@
       opacity: 1;
     }
 
-    /* Universal font */
-    button,
-    .player-choice span {
-      font-family: 'Silkscreen', monospace !important;
-      text-transform: uppercase;
-    }
-
     /* Buttons */
     #start-btn,
     #message button {
@@ -194,25 +157,21 @@
       border-radius: 6px;
       font-size: 18px;
       cursor: pointer;
+      font-family: 'Silkscreen', monospace;
+      text-transform: uppercase;
     }
 
-    /* Start button animation */
     #start-btn {
       opacity: 0;
     }
+
     #start-btn.show {
-      animation: startBtnFade 0.2s ease-out forwards;
+      animation: startBtnFade 0.25s ease-out forwards;
     }
 
     @keyframes startBtnFade {
-      from {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* Player select */
@@ -225,7 +184,7 @@
     .player-options {
       display: flex;
       gap: 24px;
-      align-items: flex-end; /* bottom-align players */
+      align-items: flex-end;
     }
 
     .player-choice {
@@ -235,48 +194,89 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0;
     }
 
     .player-choice img {
-      width: 25vw;          /* scales with viewport width */
-      max-width: 140px;     /* cap at old size */
-      height: auto;         /* keep aspect ratio */
+      width: 25vw;
+      max-width: 140px;
+      height: auto;
       image-rendering: pixelated;
     }
 
     .player-choice span {
       margin-top: 6px;
       font-size: 18px;
-      color: #ffffff !important;
       text-shadow: 0 0 4px #000;
     }
 
-    /* Player Select Fade-In */
     #select-screen {
       opacity: 0;
       transition: opacity 0.6s ease-out;
     }
+
     #select-screen.visible {
       opacity: 1;
     }
 
-    /* Game over message text */
+    /* Game over */
     #message-text {
       font-size: 18px;
       text-shadow: 2px 2px 0 #000;
     }
 
+    /* Landscape warning */
+    #rotate-warning {
+      position: fixed;
+      inset: 0;
+      background: #050711;
+      color: white;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 9999;
+    }
+
+    #rotate-stars {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    .rotate-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .rotate-logo {
+      width: 80vw;
+      max-width: 400px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 0 6px #000);
+    }
+
+    .rotate-text {
+      font-size: 18px;
+      text-align: center;
+      text-shadow: 0 0 4px #000;
+      line-height: 1.4;
+    }
   </style>
 </head>
+
 <body>
 
   <div id="game-container">
     <canvas id="game"></canvas>
   </div>
-
-  <!-- Overlay (currently always transparent, kept for flexibility) -->
-  <div id="bg-fade" class="hidden"></div>
 
   <!-- HUD -->
   <div id="overlay">
@@ -295,7 +295,6 @@
       <button id="start-btn">Starta</button>
     </div>
   </div>
-
   <!-- Player select -->
   <div id="select-screen" class="screen">
     <div class="screen-content">
@@ -319,7 +318,16 @@
     </div>
   </div>
 
-  <!-- Sound effects -->
+  <!-- Landscape warning -->
+  <div id="rotate-warning">
+    <canvas id="rotate-stars"></canvas>
+    <div class="rotate-content">
+      <img src="gfx-logo.png" class="rotate-logo">
+      <div class="rotate-text">fungerar bara på stående skärmar</div>
+    </div>
+  </div>
+
+  <!-- Sounds -->
   <audio id="oneup-sound" src="1up.mp3" preload="auto"></audio>
   <audio id="boom-sound" src="boom.mp3" preload="auto"></audio>
   <audio id="gameover-sound" src="gameover.mp3" preload="auto"></audio>
@@ -329,9 +337,8 @@
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
 
-    // Prevent long-press context menu / text selection behavior
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-    document.addEventListener('selectstart', (e) => e.preventDefault());
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('selectstart', e => e.preventDefault());
 
     const scoreNumberEl = document.getElementById("score-number");
     const livesEl = document.getElementById("lives");
@@ -346,7 +353,6 @@
 
     const startLogoEl = document.getElementById("start-logo");
     const startIntroEl = document.getElementById("start-intro-text");
-    const bgFadeEl = document.getElementById("bg-fade");
     const overlayEl = document.getElementById("overlay");
 
     const oneUpSound  = document.getElementById("oneup-sound");
@@ -354,10 +360,15 @@
     const gameoverSound = document.getElementById("gameover-sound");
     const gameplayMusic = document.getElementById("gameplay-music");
 
+    /* Landscape warning */
+    const rotateWarningEl   = document.getElementById("rotate-warning");
+    const rotateStarsCanvas = document.getElementById("rotate-stars");
+    const rotateStarsCtx    = rotateStarsCanvas.getContext("2d");
+
     const GAME_WIDTH = 360;
     const GAME_HEIGHT = 640;
 
-    /* Fullscreen Canvas – fill entire screen (non-uniform scale) */
+    /* Resize canvas to fill screen */
     function resize() {
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -372,7 +383,10 @@
       const scaleY = h / GAME_HEIGHT;
       ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
     }
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize", () => {
+      resize();
+      checkOrientation();
+    });
     resize();
 
     /* Images */
@@ -388,7 +402,6 @@
     let SANTA_WIDTH = 0;
     let SANTA_HEIGHT = 0;
 
-    // Asset loading tracking
     let imagesLoaded = 0;
     const TOTAL_IMAGES = 7;
     let assetsReady = false;
@@ -402,28 +415,28 @@
 
     playerMattiasImg.onload = onAssetLoaded;
     playerPerImg.onload = onAssetLoaded;
-    bunImg.onload = onAssetLoaded;
-    enemyImg.onload = onAssetLoaded;
-    bgImg.onload = onAssetLoaded;
-    luciaImg.onload = onAssetLoaded;
+    bunImg.onload         = onAssetLoaded;
+    enemyImg.onload       = onAssetLoaded;
+    bgImg.onload          = onAssetLoaded;
+    luciaImg.onload       = onAssetLoaded;
+
     santaImg.onload = () => {
-      SANTA_WIDTH = santaImg.width * SANTA_SCALE;
+      SANTA_WIDTH  = santaImg.width  * SANTA_SCALE;
       SANTA_HEIGHT = santaImg.height * SANTA_SCALE;
       onAssetLoaded();
     };
 
-    // Set sources AFTER onload handlers
     playerMattiasImg.src = "gfx-mattias.png";
-    playerPerImg.src = "gfx-per.png";
-    bunImg.src = "gfx-lussekatt.png";
-    enemyImg.src = "gfx-brand.png";
-    bgImg.src = "gfx-lundbergs.png";
-    santaImg.src = "gfx-santa.png";
-    luciaImg.src = "gfx-lucia.png";
+    playerPerImg.src     = "gfx-per.png";
+    bunImg.src           = "gfx-lussekatt.png";
+    enemyImg.src         = "gfx-brand.png";
+    bgImg.src            = "gfx-lundbergs.png";
+    santaImg.src         = "gfx-santa.png";
+    luciaImg.src         = "gfx-lucia.png";
 
     let currentPlayerImg = playerMattiasImg;
 
-    /* Santa & Lucia state */
+    /* Santa / Lucia state */
     let santa = {
       active: false,
       img: santaImg,
@@ -434,7 +447,7 @@
     let santaTimer = 0;
     let nextSantaTime = 4 + Math.random()*8;
 
-    /* Stars (background) */
+    /* Stars (main game) */
     const STAR_COUNT = 40;
     let stars = [];
 
@@ -451,9 +464,7 @@
     }
 
     function updateStars(dt) {
-      for (let s of stars) {
-        s.phase += s.speed * dt;
-      }
+      for (let s of stars) s.phase += s.speed * dt;
     }
 
     function drawStars() {
@@ -469,8 +480,7 @@
     function spawnCrumbs(x,y,color){
       for(let i=0;i<8;i++){
         crumbs.push({
-          x,
-          y,
+          x, y,
           vx:(Math.random()-0.5)*120,
           vy:(Math.random()-0.5)*120,
           life:0.6+Math.random()*0.3,
@@ -479,20 +489,20 @@
       }
     }
 
-    function updateCrumbs(dt) {
-      for (let c of crumbs) {
-        c.x += c.vx * dt;
-        c.y += c.vy * dt;
-        c.life -= dt;
+    function updateCrumbs(dt){
+      for(let c of crumbs){
+        c.x+=c.vx*dt;
+        c.y+=c.vy*dt;
+        c.life-=dt;
       }
-      crumbs = crumbs.filter(c => c.life > 0);
+      crumbs=crumbs.filter(c=>c.life>0);
     }
 
-    /* Music helpers */
+    /* Music */
     function startGameplayMusic() {
       gameplayMusic.volume = 0.8;
       gameplayMusic.currentTime = 0;
-      gameplayMusic.play().catch(() => {});
+      gameplayMusic.play().catch(()=>{});
     }
 
     function stopGameplayMusic() {
@@ -500,11 +510,11 @@
       gameplayMusic.currentTime = 0;
     }
 
-    /* Background intro animation for Lundbergs.png (loading -> start) */
+    /* Background fade-in intro */
     let bgIntro = {
       active: false,
       timer: 0,
-      duration: 1.2  // seconds
+      duration: 1.2
     };
 
     /* Game state */
@@ -523,17 +533,14 @@
 
     const PLAYER_SPEED = 220;
 
-    // states: "loading", "start", "intro", "select", "playing", "gameover"
     let gameState = "loading";
-
-    // loading screen timer (so "Hämtar Saffran..." is visible for a bit)
     let loadingTimer = 0;
-    const MIN_LOADING_TIME = 0.8; // seconds
+    const MIN_LOADING_TIME = 0.8;
 
-    /* Intro sequence */
     const introLines = [
-      "På Lundbergs är lussebaket i full gång.",
-      "Fånga de nybakade lussekatterna innan de hamnar på marken.",
+      "Adventsmorgon i Gröndal.",
+      "På Lundbergs bakas det för fullt.",
+      "Hjälp till att fånga de nybakade lussekatterna.",
       "Men akta dig för de vidbrända."
     ];
 
@@ -546,45 +553,41 @@
       startIntroEl.innerHTML = "";
       startIntroEl.style.display = "block";
 
-      // Hide logo + button instantly
       startLogoEl.style.display = "none";
-      startBtn.style.display = "none";
+      startBtn.style.display    = "none";
 
-      const lineDelay = 2800;
+      const delay = 2800;
 
-      introLines.forEach((text, idx) => {
+      introLines.forEach((line, idx) => {
         const p = document.createElement("p");
-        p.textContent = text;
         p.className = "intro-line";
+        p.textContent = line;
         startIntroEl.appendChild(p);
 
         setTimeout(() => {
           p.classList.add("visible");
-
-          if (idx === introLines.length - 1) {
-            setTimeout(() => {
-              setGameState("select");
-            }, 5000);
+          if(idx === introLines.length-1){
+            setTimeout(()=> setGameState("select"), 5000);
           }
-        }, idx * lineDelay);
+        }, idx * delay);
       });
     }
 
-    function updateLivesUI(){
+    function updateLivesUI() {
       livesEl.innerHTML="";
       for(let i=0;i<lives;i++){
-        const img = document.createElement("img");
+        const img=document.createElement("img");
         img.src="gfx-heart.png";
         livesEl.appendChild(img);
       }
     }
 
     function resetGame(){
-      player = {
-        x: GAME_WIDTH/2,
-        y: GAME_HEIGHT-55,
-        width: 70,
-        height: 110
+      player={
+        x:GAME_WIDTH/2,
+        y:GAME_HEIGHT-55,
+        width:70,
+        height:110
       };
 
       obstacles=[];
@@ -593,8 +596,7 @@
       timeAlive=0;
       spawnTimer=0;
 
-      crumbs = [];
-
+      crumbs=[];
       updateLivesUI();
       scoreNumberEl.textContent=score;
       initStars();
@@ -602,127 +604,104 @@
       messageEl.style.display="none";
     }
 
-    /* Start screen animation sequence (logo + button only) */
     function runStartScreenAnimations() {
-      // Reset logo animation state
-      document.body.classList.remove('logo-anim');
-      startBtn.classList.remove('show');
+      document.body.classList.remove("logo-anim");
+      startBtn.classList.remove("show");
 
-      // Kick logo + button animation with a tiny delay so DOM is settled
-      setTimeout(() => {
-        document.body.classList.add('logo-anim');
-      }, 500);
-
-      setTimeout(() => {
-        startBtn.classList.add('show');
-      }, 800);
+      setTimeout(()=> document.body.classList.add("logo-anim"), 500);
+      setTimeout(()=> startBtn.classList.add("show"), 800);
     }
 
-    /* Screen switching */
     function setGameState(state){
-      gameState = state;
+      gameState=state;
 
-      /* Start + intro screens */
       startScreenEl.style.display =
-        (state === "start" || state === "intro") ? "flex" : "none";
+        (state==="start"||state==="intro") ? "flex" : "none";
 
-      /* Player select screen with fade-in */
-      if (state === "select") {
-        selectScreenEl.style.display = "flex";
+      if(state==="select"){
+        selectScreenEl.style.display="flex";
         selectScreenEl.classList.remove("visible");
-        setTimeout(() => {
-          selectScreenEl.classList.add("visible");
-        }, 50);
+        setTimeout(()=> selectScreenEl.classList.add("visible"), 50);
       } else {
         selectScreenEl.classList.remove("visible");
-        selectScreenEl.style.display = "none";
+        selectScreenEl.style.display="none";
       }
 
-      /* HUD visible only while playing (with slide animation) */
-      if (state === "playing") {
+      if(state==="playing"){
         overlayEl.classList.add("hud-visible");
       } else {
         overlayEl.classList.remove("hud-visible");
       }
 
-      if (state !== "gameover") {
-        messageEl.style.display = "none";
-      }
-
-      if (state === "start") {
-        startIntroEl.style.display = "none";
-        startIntroEl.innerHTML = "";
-        startLogoEl.style.display = "block";
-        startBtn.style.display = "inline-block";
-
-        // Start logo + button animations
+      if(state==="start"){
+        startIntroEl.style.display="none";
+        startIntroEl.innerHTML="";
+        startLogoEl.style.display="block";
+        startBtn.style.display="inline-block";
         runStartScreenAnimations();
       }
-    }
 
-    function spawnObstacle(){
+      if(state!=="gameover"){
+        messageEl.style.display="none";
+      }
+    }
+    function spawnObstacle() {
       const enemy = Math.random() < 0.2;
       obstacles.push({
-        x:Math.random()*(GAME_WIDTH-28),
-        y:-28,
-        width:28,
-        height:28,
-        speed:120+Math.random()*60,
-        type: enemy?"enemy":"bun"
+        x: Math.random() * (GAME_WIDTH - 28),
+        y: -28,
+        width: 28,
+        height: 28,
+        speed: 120 + Math.random() * 60,
+        type: enemy ? "enemy" : "bun"
       });
     }
 
-    function hitOverlap(p,o){
-      const w=p.width*0.6;
-      const h=p.height*0.7;
-      const x=p.x-w/2;
-      const y=p.y-h/2;
-      return !(x+w<o.x||x>o.x+o.width||y+h<o.y||y>o.y+o.height);
+    function hitOverlap(p, o) {
+      const w = p.width * 0.6;
+      const h = p.height * 0.7;
+      const x = p.x - w/2;
+      const y = p.y - h/2;
+      return !(x+w < o.x || x > o.x+o.width || y+h < o.y || y > o.y+o.height);
     }
 
     function endGame(){
       setGameState("gameover");
-
       stopGameplayMusic();
 
-      gameoverSound.currentTime=0;
+      gameoverSound.currentTime = 0;
       gameoverSound.play();
 
-      // Explode all remaining buns/enemies into crumbs
-      for (let o of obstacles) {
-        const cx = o.x + o.width / 2;
-        const cy = o.y + o.height / 2;
-        const color = (o.type === "bun") ? "orange" : "brown";
-        spawnCrumbs(cx, cy, color);
+      for(let o of obstacles){
+        const cx=o.x+o.width/2;
+        const cy=o.y+o.height/2;
+        const color=(o.type==="bun") ? "orange" : "brown";
+        spawnCrumbs(cx,cy,color);
       }
-      obstacles = [];
+      obstacles=[];
 
-      // Delay game over message so crumbs can crumble
-      messageEl.style.display = "none";
-
-      setTimeout(() => {
-        if (gameState === "gameover") {
-          messageTextEl.innerHTML = `Du lyckades fånga<br>${score} lussekatter`;
+      setTimeout(()=>{
+        if(gameState==="gameover"){
+          messageTextEl.innerHTML=`Du lyckades fånga<br>${score} lussekatter`;
           messageEl.style.display="flex";
         }
-      }, 900);
+      },900);
     }
 
-    /* Santa / Lucia fly-by */
     function updateSanta(dt){
-      if (!(gameState==="start"||gameState==="intro"||gameState==="select")){
+      if(!(gameState==="start"||gameState==="intro"||gameState==="select")){
         santa.active=false;
         return;
       }
 
       if(!santa.active){
-        santaTimer += dt;
-        if(santaTimer >= nextSantaTime){
-          const chosenImg = (Math.random() < 0.5 ? santaImg : luciaImg);
-          santa.img = chosenImg;
+        santaTimer+=dt;
+        if(santaTimer>=nextSantaTime){
+          const useSanta = Math.random() < 0.5;
+          santa.img = useSanta ? santaImg : luciaImg;
 
-          const w = chosenImg.width ? chosenImg.width * SANTA_SCALE : 80;
-          const h = chosenImg.height ? chosenImg.height * SANTA_SCALE : 32;
+          const w = santa.img.width  * SANTA_SCALE || 80;
+          const h = santa.img.height * SANTA_SCALE || 32;
 
           SANTA_WIDTH = w;
           SANTA_HEIGHT = h;
@@ -733,55 +712,50 @@
           santaTimer = 0;
           nextSantaTime = 4 + Math.random()*8;
         }
-      } else {
+      }
+      else {
         santa.x -= santa.speed * dt;
-        const w = SANTA_WIDTH || 80;
-        if(santa.x < -w - 20) {
+        if(santa.x < -SANTA_WIDTH - 20){
           santa.active = false;
         }
       }
     }
 
-    /* Gameplay – with crumbs */
     function updateGame(dt){
-      timeAlive+=dt;
+      timeAlive += dt;
       const difficulty = Math.min(timeAlive/30,1);
-      spawnInterval = 1.0 - difficulty*0.6;
+      spawnInterval = 1.0 - difficulty * 0.6;
 
-      if(holdingLeft&&!holdingRight)  player.x-=PLAYER_SPEED*dt;
-      if(holdingRight&&!holdingLeft) player.x+=PLAYER_SPEED*dt;
+      if(holdingLeft && !holdingRight)  player.x -= PLAYER_SPEED * dt;
+      if(holdingRight && !holdingLeft) player.x += PLAYER_SPEED * dt;
 
-      const half=player.width/2;
-      if(player.x<half) player.x=half;
-      if(player.x>GAME_WIDTH-half) player.x=GAME_WIDTH-half;
+      const half = player.width/2;
+      if(player.x < half) player.x = half;
+      if(player.x > GAME_WIDTH - half) player.x = GAME_WIDTH - half;
 
-      // Spawn (dt-safe)
       spawnTimer += dt;
       if(spawnTimer >= spawnInterval){
         spawnTimer -= spawnInterval;
         spawnObstacle();
       }
 
-      const speedBoost = 120 + (420-120)*difficulty;
+      const speedBoost = 120 + (420 - 120)*difficulty;
 
-      // Single pass: move + collide + keep/kill
       let writeIndex = 0;
-      for (let i = 0; i < obstacles.length; i++) {
+      for(let i=0; i<obstacles.length; i++){
         const o = obstacles[i];
 
-        o.y += (o.speed + speedBoost*0.5)*dt;
-
+        o.y += (o.speed + speedBoost*0.5) * dt;
         let remove = false;
 
-        if (hitOverlap(player, o)){
-          const cx = o.x + o.width/2;
-          const cy = o.y + o.height/2;
+        if(hitOverlap(player, o)){
+          const cx=o.x+o.width/2;
+          const cy=o.y+o.height/2;
 
           if(o.type==="bun"){
             score++;
             scoreNumberEl.textContent=score;
-
-            spawnCrumbs(cx, cy, "orange");
+            spawnCrumbs(cx,cy,"orange");
 
             if(score%10===0){
               lives++;
@@ -793,27 +767,23 @@
             lives--;
             boomSound.currentTime=0;
             boomSound.play();
+            spawnCrumbs(cx,cy,"brown");
             updateLivesUI();
-
-            spawnCrumbs(cx, cy, "brown");
 
             if(lives<=0){
               endGame();
               return;
             }
           }
-
           remove = true;
         }
-        else if (o.y > GAME_HEIGHT) {
+        else if(o.y > GAME_HEIGHT){
           if(o.type==="bun"){
             lives--;
-
-            const cxBottom = o.x + o.width/2;
-            const cyBottom = GAME_HEIGHT - 5;
-            spawnCrumbs(cxBottom, cyBottom, "brown");
-
             updateLivesUI();
+            const cx=o.x+o.width/2;
+            spawnCrumbs(cx, GAME_HEIGHT-5, "brown");
+
             if(lives<=0){
               endGame();
               return;
@@ -822,9 +792,7 @@
           remove = true;
         }
 
-        if (!remove) {
-          obstacles[writeIndex++] = o;
-        }
+        if(!remove) obstacles[writeIndex++] = o;
       }
       obstacles.length = writeIndex;
     }
@@ -832,130 +800,113 @@
     function draw(){
       ctx.clearRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
-      // LOADING SCREEN
-      if (gameState === "loading") {
-        ctx.fillStyle = "#050711";
+      if(gameState==="loading"){
+        ctx.fillStyle="#050711";
         ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
-
         drawStars();
 
-        // "Hämtar Saffran" + animated dots in *screen* pixels (always 18px)
         ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.fillStyle="#fff";
+        ctx.font="18px Silkscreen, monospace";
+        ctx.textBaseline="middle";
 
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "18px Silkscreen, monospace";
-        ctx.textBaseline = "middle";
+        const base="Hämtar Saffran";
+        const dotsCount = Math.floor(loadingTimer*2)%4;
+        const dots=".".repeat(dotsCount);
 
-        const baseText = "Hämtar Saffran";
-        const dotsCount = Math.floor(loadingTimer * 2) % 4;
-        const dots = ".".repeat(dotsCount);
+        const cx = canvas.width/2;
+        const cy = canvas.height/2;
 
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+        ctx.textAlign="center";
+        ctx.fillText(base,cx,cy);
 
-        ctx.textAlign = "center";
-        ctx.fillText(baseText, centerX, centerY);
-
-        const baseWidth = ctx.measureText(baseText).width;
-
-        ctx.textAlign = "left";
-        const dotsX = centerX + baseWidth / 2 + 4;
-        ctx.fillText(dots, dotsX, centerY);
+        const baseW = ctx.measureText(base).width;
+        ctx.textAlign="left";
+        ctx.fillText(dots, cx + baseW/2 + 4, cy);
 
         ctx.restore();
         return;
       }
 
-      // BACKGROUND (with fade-in only, no vertical motion)
+      /* Background (no slide, only fade) */
       if(bgImg.complete){
-        const scale=GAME_WIDTH/bgImg.width;
-        const h=bgImg.height*scale;
+        const scale = GAME_WIDTH / bgImg.width;
+        const h = bgImg.height * scale;
         const finalY = GAME_HEIGHT - h;
 
         let topY = finalY;
         let alpha = 1;
 
-        if (bgIntro.active) {
+        if(bgIntro.active){
           const t = Math.min(bgIntro.timer / bgIntro.duration, 1);
           const ease = 1 - Math.pow(1 - t, 3);
-
-          // No movement — only fade in
           topY = finalY;
           alpha = ease;
         }
 
-        if (topY > 0) {
+        if(topY>0){
           ctx.fillStyle="#050711";
           ctx.fillRect(0,0,GAME_WIDTH,topY);
         }
 
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.drawImage(bgImg,0,topY,GAME_WIDTH,h);
+        ctx.drawImage(bgImg, 0, topY, GAME_WIDTH, h);
         ctx.restore();
       }
 
-      // Starry background on all screens
       drawStars();
 
-      if((gameState==="start"||gameState==="intro"||gameState==="select")&&santa.active){
-        const w = SANTA_WIDTH || santa.img.width * SANTA_SCALE || 80;
-        const h = SANTA_HEIGHT || santa.img.height * SANTA_SCALE || 32;
-        ctx.drawImage(santa.img,santa.x,santa.y,w,h);
+      if((gameState==="start"||gameState==="intro"||gameState==="select") && santa.active){
+        ctx.drawImage(santa.img, santa.x, santa.y, SANTA_WIDTH, SANTA_HEIGHT);
       }
 
-      // Draw crumbs as pixel chunks
       for(let c of crumbs){
         ctx.fillStyle = c.color==="orange" ? "#ffb746" : "#8c5a32";
-        ctx.fillRect(Math.round(c.x),Math.round(c.y),3,3);
+        ctx.fillRect(Math.round(c.x), Math.round(c.y), 3, 3);
       }
 
-      // Draw player in both playing and gameover
       if(gameState==="playing" || gameState==="gameover"){
-        ctx.drawImage(currentPlayerImg,
-          player.x-player.width/2,
-          player.y-player.height/2,
-          player.width,player.height
+        ctx.drawImage(
+          currentPlayerImg,
+          player.x - player.width/2,
+          player.y - player.height/2,
+          player.width,
+          player.height
         );
       }
 
-      // Draw buns only while playing
       if(gameState==="playing"){
         for(let o of obstacles){
-          const img=(o.type==="enemy")?enemyImg:bunImg;
-          ctx.drawImage(img,o.x,o.y,o.width,o.height);
+          const img = (o.type==="enemy") ? enemyImg : bunImg;
+          ctx.drawImage(img, o.x, o.y, o.width, o.height);
         }
       }
     }
 
     function loop(t){
-      const dt=(t-lastTime)/1000||0;
-      lastTime=t;
+      const dt = (t - lastTime) / 1000 || 0;
+      lastTime = t;
 
       updateStars(dt);
       updateSanta(dt);
       updateCrumbs(dt);
 
-      // Update background intro animation timer
-      if (bgIntro.active) {
+      if(bgIntro.active){
         bgIntro.timer += dt;
-        if (bgIntro.timer >= bgIntro.duration) {
+        if(bgIntro.timer >= bgIntro.duration){
           bgIntro.active = false;
         }
       }
 
-      if (gameState === "loading") {
+      if(gameState==="loading"){
         loadingTimer += dt;
 
-        // When assets are ready AND we've shown loading for a bit, move on
-        if (assetsReady && loadingTimer > MIN_LOADING_TIME) {
+        if(assetsReady && loadingTimer > MIN_LOADING_TIME){
           resetGame();
-
-          // start Lundbergs intro animation
           bgIntro.active = true;
           bgIntro.timer = 0;
-
           setGameState("start");
         }
       }
@@ -968,8 +919,8 @@
       requestAnimationFrame(loop);
     }
 
-    /* Controls */
-    canvas.addEventListener("pointerdown",e=>{
+    /* INPUT */
+    canvas.addEventListener("pointerdown", e => {
       const rect = canvas.getBoundingClientRect();
       const xGame = (e.clientX - rect.left) / rect.width * GAME_WIDTH;
 
@@ -977,46 +928,101 @@
       holdingRight = !holdingLeft;
     });
 
-    window.addEventListener("pointerup",()=>{
-      holdingLeft=false;
-      holdingRight=false;
+    window.addEventListener("pointerup", ()=>{
+      holdingLeft = false;
+      holdingRight = false;
     });
 
-    window.addEventListener("keydown",e=>{
+    window.addEventListener("keydown", e => {
       if(e.key==="ArrowLeft"||e.key==="a") holdingLeft=true;
       if(e.key==="ArrowRight"||e.key==="d") holdingRight=true;
-      if(e.key===" "&&gameState==="gameover"){
+      if(e.key===" " && gameState==="gameover"){
         resetGame();
         setGameState("select");
       }
     });
 
-    window.addEventListener("keyup",e=>{
+    window.addEventListener("keyup", e => {
       if(e.key==="ArrowLeft"||e.key==="a") holdingLeft=false;
       if(e.key==="ArrowRight"||e.key==="d") holdingRight=false;
     });
 
-    restartBtn.addEventListener("click",()=>{
+    restartBtn.addEventListener("click", () => {
       resetGame();
       setGameState("select");
     });
 
-    startBtn.addEventListener("click",()=>{
-      playIntroSequence();
-    });
+    startBtn.addEventListener("click", () => playIntroSequence());
 
-    playerChoiceButtons.forEach(btn=>{
-      btn.addEventListener("click",()=>{
-        currentPlayerImg =
-          btn.dataset.player==="per" ? playerPerImg : playerMattiasImg;
+    playerChoiceButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        currentPlayerImg = (btn.dataset.player==="per") ? playerPerImg : playerMattiasImg;
         resetGame();
         setGameState("playing");
         startGameplayMusic();
       });
     });
 
-    /* Begin */
-    initStars();                      // stars visible on loading screen immediately
+    /* --- LANDSCAPE WARNING STARFIELD --- */
+    let rotateStars = [];
+    const ROTATE_STAR_COUNT = 40;
+    let lastRotateTime = 0;
+
+    function initRotateStars(){
+      rotateStars = [];
+      for (let i=0; i<ROTATE_STAR_COUNT; i++){
+        rotateStars.push({
+          x: Math.random()*rotateStarsCanvas.width,
+          y: Math.random()*rotateStarsCanvas.height,
+          phase: Math.random()*Math.PI*2,
+          speed: 0.5 + Math.random()*0.8
+        });
+      }
+    }
+
+    function resizeRotateStars(){
+      rotateStarsCanvas.width = window.innerWidth;
+      rotateStarsCanvas.height = window.innerHeight;
+      initRotateStars();
+    }
+
+    function drawRotateStars(dt){
+      rotateStarsCtx.clearRect(0,0,rotateStarsCanvas.width,rotateStarsCanvas.height);
+
+      rotateStars.forEach(star=>{
+        star.phase += star.speed * dt;
+        const b = 0.2 + 0.8 * (0.5 + 0.5*Math.sin(star.phase));
+        rotateStarsCtx.fillStyle = `rgba(255,255,255,${b})`;
+        rotateStarsCtx.fillRect(star.x, star.y, 2, 2);
+      });
+    }
+
+    function rotateStarsLoop(t){
+      const dt=(t-lastRotateTime)/1000 || 0;
+      lastRotateTime=t;
+
+      if(rotateWarningEl.style.display==="flex"){
+        drawRotateStars(dt);
+      }
+      requestAnimationFrame(rotateStarsLoop);
+    }
+    requestAnimationFrame(rotateStarsLoop);
+
+    function checkOrientation(){
+      const isLandscape = window.innerWidth > window.innerHeight;
+      if(isLandscape){
+        rotateWarningEl.style.display="flex";
+        resizeRotateStars();
+      } else {
+        rotateWarningEl.style.display="none";
+      }
+    }
+
+    checkOrientation();
+    window.addEventListener("orientationchange", checkOrientation);
+
+    /* START */
+    initStars();
     requestAnimationFrame(loop);
 
   </script>
