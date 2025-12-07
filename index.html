@@ -246,8 +246,7 @@
     </div>
   </div>
 
-  <!-- Sound effects -->
-  <audio id="catch-sound" src="catch.mp3" preload="auto"></audio>
+  <!-- Sound effects (no catch-sound anymore) -->
   <audio id="oneup-sound" src="1up.mp3" preload="auto"></audio>
   <audio id="boom-sound" src="boom.mp3" preload="auto"></audio>
   <audio id="gameover-sound" src="gameover.mp3" preload="auto"></audio>
@@ -275,14 +274,12 @@
     const startLogoEl = document.getElementById("start-logo");
     const startIntroEl = document.getElementById("start-intro-text");
 
-    const catchSound = document.getElementById("catch-sound");
     const oneUpSound  = document.getElementById("oneup-sound");
     const boomSound   = document.getElementById("boom-sound");
     const gameoverSound = document.getElementById("gameover-sound");
     const gameplayMusic = document.getElementById("gameplay-music");
 
     // Make sure audio elements are loaded
-    catchSound.load();
     oneUpSound.load();
     boomSound.load();
     gameoverSound.load();
@@ -294,7 +291,7 @@
       if (soundsWarmedUp) return;
       soundsWarmedUp = true;
 
-      const audios = [catchSound, oneUpSound, boomSound, gameoverSound, gameplayMusic];
+      const audios = [oneUpSound, boomSound, gameoverSound, gameplayMusic];
 
       audios.forEach(audio => {
         try {
@@ -310,13 +307,12 @@
               audio.volume = oldVol;
             });
           } else {
-            // sync fallback
             audio.pause();
             audio.currentTime = 0;
             audio.volume = oldVol;
           }
         } catch (e) {
-          // ignore any errors, it's just a warmup
+          // ignore warmup failures
         }
       });
     }
@@ -622,7 +618,7 @@
       }
     }
 
-    /* Gameplay – without crumbs */
+    /* Gameplay – no crumbs, no catch-sound */
     function updateGame(dt){
       timeAlive+=dt;
       const difficulty = Math.min(timeAlive/30,1);
@@ -666,10 +662,8 @@
               oneUpSound.currentTime=0;
               oneUpSound.play();
               updateLivesUI();
-            } else {
-              catchSound.currentTime=0;
-              catchSound.play();
             }
+            // no regular catch sound anymore
           } else {
             lives--;
             boomSound.currentTime=0;
@@ -793,7 +787,7 @@
     });
 
     startBtn.addEventListener("click",()=>{
-      warmupSounds();      // 🔥 pre-decode sounds on first tap
+      warmupSounds();      // pre-decode remaining sounds on first tap
       playIntroSequence();
     });
 
