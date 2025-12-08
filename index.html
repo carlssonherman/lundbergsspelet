@@ -64,7 +64,6 @@
       z-index: 20;
       text-shadow: 0 0 4px #000;
 
-      /* slide in animation */
       transform: translateY(-120%);
       opacity: 0;
       transition: transform 0.4s ease-out, opacity 0.4s ease-out;
@@ -331,13 +330,14 @@
     </div>
   </div>
 
-  <!-- Sounds -->
-  <audio id="oneup-sound" src="1up.mp3" preload="auto"></audio>
-  <audio id="boom-sound" src="boom.mp3" preload="auto"></audio>
-  <audio id="gameover-sound" src="gameover.mp3" preload="auto"></audio>
+  <!-- Music + SFX (Web Audio preferred, HTMLAudio fallback) -->
   <audio id="gameplay-music" src="gameplay.mp3" preload="auto" loop></audio>
-  <!-- NEW: catch sound for lussekatterna -->
-  <audio id="catch-sound" src="catch.mp3" preload="auto"></audio>
+
+  <!-- Fallback SFX elements -->
+  <audio id="sfx-catch" src="catch.mp3" preload="auto"></audio>
+  <audio id="sfx-oneup" src="1up.mp3" preload="auto"></audio>
+  <audio id="sfx-boom" src="boom.mp3" preload="auto"></audio>
+  <audio id="sfx-gameover" src="gameover.mp3" preload="auto"></audio>
 
   <script>
     const canvas = document.getElementById("game");
@@ -361,30 +361,83 @@
     const startIntroEl = document.getElementById("start-intro-text");
     const overlayEl = document.getElementById("overlay");
 
-    const oneUpSound  = document.getElementById("oneup-sound");
-    const boomSound   = document.getElementById("boom-sound");
-    const gameoverSound = document.getElementById("gameover-sound");
     const gameplayMusic = document.getElementById("gameplay-music");
 
-    // --- Catch sound pool (used very frequently) ---
-    const catchSoundElement = document.getElementById("catch-sound");
-    const CATCH_POOL_SIZE = 4;
-    const catchSoundPool = [];
-    for (let i = 0; i < CATCH_POOL_SIZE; i++) {
-      const a = catchSoundElement.cloneNode(); // same src + attributes
-      a.load();
-      catchSoundPool.push(a);
-    }
-    let catchSoundIndex = 0;
+    /* --- Web Audio for all short SFX --- */
+    let sfxCtx = null;
+    const sfxBuffers = {};  // name -> AudioBuffer
+    let sfxLoading = false;
 
-    function playCatchSound() {
-      const a = catchSoundPool[catchSoundIndex];
-      catchSoundIndex = (catchSoundIndex + 1) % CATCH_POOL_SIZE;
+    const SFX_FILES = {
+      catch: "catch.mp3",
+      oneup: "1up.mp3",
+      boom: "boom.mp3",
+      gameover: "gameover.mp3"
+    };
+
+    // HTMLAudio fallback for each SFX
+    const sfxFallbackEls = {
+      catch: document.getElementById("sfx-catch"),
+      oneup: document.getElementById("sfx-oneup"),
+      boom: document.getElementById("sfx-boom"),
+      gameover: document.getElementById("sfx-gameover")
+    };
+
+    function ensureSfxContext() {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return; // no support
+      if (!sfxCtx) {
+        sfxCtx = new AudioCtx();
+      }
+      if (sfxCtx.state === "suspended") {
+        sfxCtx.resume();
+      }
+      if (!sfxLoading && Object.keys(sfxBuffers).length === 0) {
+        loadAllSfx();
+      }
+    }
+
+    async function loadAllSfx() {
+      if (!sfxCtx) return;
+      sfxLoading = true;
       try {
-        a.currentTime = 0;
-        a.play();
+        const entries = Object.entries(SFX_FILES);
+        for (const [name, url] of entries) {
+          const res = await fetch(url);
+          if (!res.ok) {
+            console.warn("Failed to fetch SFX:", name, res.status);
+            continue;
+          }
+          const arrayBuf = await res.arrayBuffer();
+          const buffer = await sfxCtx.decodeAudioData(arrayBuf);
+          sfxBuffers[name] = buffer;
+        }
       } catch (e) {
-        // Ignore autoplay errors on some mobile browsers
+        console.warn("Failed loading SFX", e);
+      } finally {
+        sfxLoading = false;
+      }
+    }
+
+    function playSfx(name) {
+      // Prefer Web Audio if context + buffer are ready
+      if (sfxCtx && sfxBuffers[name]) {
+        const src = sfxCtx.createBufferSource();
+        src.buffer = sfxBuffers[name];
+        src.connect(sfxCtx.destination);
+        src.start(0);
+        return;
+      }
+
+      // Fallback to HTMLAudio
+      const el = sfxFallbackEls[name];
+      if (el) {
+        try {
+          el.currentTime = 0;
+          el.play();
+        } catch (e) {
+          // Ignore autoplay issues
+        }
       }
     }
 
@@ -442,11 +495,11 @@
     }
 
     playerMattiasImg.onload = onAssetLoaded;
-    playerPerImg.onload = onAssetLoaded;
-    bunImg.onload         = onAssetLoaded;
-    enemyImg.onload       = onAssetLoaded;
-    bgImg.onload          = onAssetLoaded;
-    luciaImg.onload       = onAssetLoaded;
+    playerPerImg.onload     = onAssetLoaded;
+    bunImg.onload           = onAssetLoaded;
+    enemyImg.onload         = onAssetLoaded;
+    bgImg.onload            = onAssetLoaded;
+    luciaImg.onload         = onAssetLoaded;
 
     santaImg.onload = () => {
       SANTA_WIDTH  = santaImg.width  * SANTA_SCALE;
@@ -697,8 +750,7 @@
       setGameState("gameover");
       stopGameplayMusic();
 
-      gameoverSound.currentTime = 0;
-      gameoverSound.play();
+      playSfx("gameover");
 
       for(let o of obstacles){
         const cx=o.x+o.width/2;
@@ -784,21 +836,17 @@
             score++;
             scoreNumberEl.textContent=score;
 
-            // Play catch sound from pool (many times without lag)
-            playCatchSound();
-
+            playSfx("catch");
             spawnCrumbs(cx,cy,"orange");
 
             if(score%10===0){
               lives++;
-              oneUpSound.currentTime=0;
-              oneUpSound.play();
+              playSfx("oneup");
               updateLivesUI();
             }
           } else {
             lives--;
-            boomSound.currentTime=0;
-            boomSound.play();
+            playSfx("boom");
             spawnCrumbs(cx,cy,"brown");
             updateLivesUI();
 
@@ -958,6 +1006,8 @@
 
       holdingLeft = (xGame < GAME_WIDTH/2);
       holdingRight = !holdingLeft;
+
+      ensureSfxContext();
     });
 
     window.addEventListener("pointerup", ()=>{
@@ -980,14 +1030,19 @@
     });
 
     restartBtn.addEventListener("click", () => {
+      ensureSfxContext();
       resetGame();
       setGameState("select");
     });
 
-    startBtn.addEventListener("click", () => playIntroSequence());
+    startBtn.addEventListener("click", () => {
+      ensureSfxContext();
+      playIntroSequence();
+    });
 
     playerChoiceButtons.forEach(btn => {
       btn.addEventListener("click", () => {
+        ensureSfxContext();
         currentPlayerImg = (btn.dataset.player==="per") ? playerPerImg : playerMattiasImg;
         resetGame();
         setGameState("playing");
