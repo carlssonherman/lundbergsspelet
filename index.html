@@ -203,14 +203,14 @@
       image-rendering: pixelated;
     }
 
- .player-choice span {
-  font-family: 'Silkscreen', monospace !important;
-  font-size: 18px;
-  color: #fff;
-  margin-top: 10px; 
-  text-shadow: 0 0 4px #000;
-  text-transform: uppercase;
-}
+    .player-choice span {
+      font-family: 'Silkscreen', monospace !important;
+      font-size: 18px;
+      color: #fff;
+      margin-top: 10px;
+      text-shadow: 0 0 4px #000;
+      text-transform: uppercase;
+    }
 
     #select-screen {
       opacity: 0;
@@ -298,6 +298,7 @@
       <button id="start-btn">Starta</button>
     </div>
   </div>
+
   <!-- Player select -->
   <div id="select-screen" class="screen">
     <div class="screen-content">
@@ -335,6 +336,8 @@
   <audio id="boom-sound" src="boom.mp3" preload="auto"></audio>
   <audio id="gameover-sound" src="gameover.mp3" preload="auto"></audio>
   <audio id="gameplay-music" src="gameplay.mp3" preload="auto" loop></audio>
+  <!-- NEW: catch sound for lussekatterna -->
+  <audio id="catch-sound" src="catch.mp3" preload="auto"></audio>
 
   <script>
     const canvas = document.getElementById("game");
@@ -362,6 +365,28 @@
     const boomSound   = document.getElementById("boom-sound");
     const gameoverSound = document.getElementById("gameover-sound");
     const gameplayMusic = document.getElementById("gameplay-music");
+
+    // --- Catch sound pool (used very frequently) ---
+    const catchSoundElement = document.getElementById("catch-sound");
+    const CATCH_POOL_SIZE = 4;
+    const catchSoundPool = [];
+    for (let i = 0; i < CATCH_POOL_SIZE; i++) {
+      const a = catchSoundElement.cloneNode(); // same src + attributes
+      a.load();
+      catchSoundPool.push(a);
+    }
+    let catchSoundIndex = 0;
+
+    function playCatchSound() {
+      const a = catchSoundPool[catchSoundIndex];
+      catchSoundIndex = (catchSoundIndex + 1) % CATCH_POOL_SIZE;
+      try {
+        a.currentTime = 0;
+        a.play();
+      } catch (e) {
+        // Ignore autoplay errors on some mobile browsers
+      }
+    }
 
     /* Landscape warning */
     const rotateWarningEl   = document.getElementById("rotate-warning");
@@ -647,6 +672,7 @@
         messageEl.style.display="none";
       }
     }
+
     function spawnObstacle() {
       const enemy = Math.random() < 0.2;
       obstacles.push({
@@ -757,6 +783,10 @@
           if(o.type==="bun"){
             score++;
             scoreNumberEl.textContent=score;
+
+            // Play catch sound from pool (many times without lag)
+            playCatchSound();
+
             spawnCrumbs(cx,cy,"orange");
 
             if(score%10===0){
