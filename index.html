@@ -857,20 +857,24 @@
           }
           remove = true;
         }
-        else if(o.y > GAME_HEIGHT){
-          if(o.type==="bun"){
-            lives--;
-            updateLivesUI();
-            const cx=o.x+o.width/2;
-            spawnCrumbs(cx, GAME_HEIGHT-5, "brown");
+       else if(o.y > GAME_HEIGHT){
+  if(o.type==="bun"){
+    lives--;
 
-            if(lives<=0){
-              endGame();
-              return;
-            }
-          }
-          remove = true;
-        }
+    // NEW: play boom when a lussekatt hits the ground
+    playSfx("boom");
+
+    updateLivesUI();
+    const cx = o.x + o.width/2;
+    spawnCrumbs(cx, GAME_HEIGHT - 5, "brown");
+
+    if(lives <= 0){
+      endGame();
+      return;
+    }
+  }
+  remove = true;
+}
 
         if(!remove) obstacles[writeIndex++] = o;
       }
