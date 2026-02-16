@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8" />
-  <title>Lussekaos på Lundbergs</title>
+  <title>Semmeljakten på Lundbergs</title>
 
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -62,7 +62,7 @@
       align-items: center;
       pointer-events: none;
       z-index: 20;
-      text-shadow: 0 0 4px #000;
+      text-shadow: 0 0 0px #000;
 
       transform: translateY(-120%);
       opacity: 0;
@@ -112,7 +112,7 @@
 
     /* Logo animation */
     #start-logo .logo-image {
-      width: 70vw;
+      width: 80vw;
       max-width: 380px;
       image-rendering: pixelated;
       opacity: 0;
@@ -151,7 +151,7 @@
       margin-top: 20px;
       padding: 10px 24px;
       border: 2px solid #fff;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0);
       color: #fff;
       border-radius: 6px;
       font-size: 18px;
@@ -177,7 +177,7 @@
     #select-title {
       font-size: 18px;
       margin-bottom: 30px;
-      text-shadow: 0 0 6px #000;
+      text-shadow: 0 0 0px #000;
     }
 
     .player-options {
@@ -207,7 +207,7 @@
       font-size: 18px;
       color: #fff;
       margin-top: 10px;
-      text-shadow: 0 0 4px #000;
+      text-shadow: 0 0 0px #000;
       text-transform: uppercase;
     }
 
@@ -223,14 +223,14 @@
     /* Game over */
     #message-text {
       font-size: 18px;
-      text-shadow: 2px 2px 0 #000;
+      text-shadow: 0px 0px 0 #000;
     }
 
     /* Landscape warning */
     #rotate-warning {
       position: fixed;
       inset: 0;
-      background: #080c16;
+      background: #1c35a1;
       color: white;
       display: none;
       justify-content: center;
@@ -262,13 +262,13 @@
       width: 25vw;
       max-width: 400px;
       image-rendering: pixelated;
-      filter: drop-shadow(0 0 6px #000);
+      filter: drop-shadow(0 0 0px #000);
     }
 
     .rotate-text {
       font-size: 18px;
       text-align: center;
-      text-shadow: 0 0 4px #000;
+      text-shadow: 0 0 0px #000;
       line-height: 1.4;
     }
   </style>
@@ -476,6 +476,7 @@
     const bunImg = new Image();
     const enemyImg = new Image();
     const bgImg = new Image();
+    const himmelImg = new Image();
     const santaImg = new Image();
     const luciaImg = new Image();
 
@@ -484,7 +485,7 @@
     let SANTA_HEIGHT = 0;
 
     let imagesLoaded = 0;
-    const TOTAL_IMAGES = 7;
+    const TOTAL_IMAGES = 8;
     let assetsReady = false;
 
     function onAssetLoaded() {
@@ -499,6 +500,7 @@
     bunImg.onload           = onAssetLoaded;
     enemyImg.onload         = onAssetLoaded;
     bgImg.onload            = onAssetLoaded;
+    himmelImg.onload        = onAssetLoaded;
     luciaImg.onload         = onAssetLoaded;
 
     santaImg.onload = () => {
@@ -512,6 +514,7 @@
     bunImg.src           = "gfx-semla.png";
     enemyImg.src         = "gfx-bun.png";
     bgImg.src            = "gfx-lundbergs-spring.png";
+    himmelImg.src        = "himmel.png";
     santaImg.src         = "gfx-empty-1.png";
     luciaImg.src         = "gfx-empty-1.png";
 
@@ -762,7 +765,7 @@
 
       setTimeout(()=>{
         if(gameState==="gameover"){
-          messageTextEl.innerHTML=`Du lyckades fånga<br>${score} lussekatter`;
+          messageTextEl.innerHTML=`Du lyckades fånga<br>${score} semlor`;
           messageEl.style.display="flex";
         }
       },900);
@@ -857,24 +860,24 @@
           }
           remove = true;
         }
-       else if(o.y > GAME_HEIGHT){
-  if(o.type==="bun"){
-    lives--;
+        else if(o.y > GAME_HEIGHT){
+          if(o.type==="bun"){
+            lives--;
 
-    // NEW: play boom when a lussekatt hits the ground
-    playSfx("boom");
+            // NEW: play boom when a lussekatt hits the ground
+            playSfx("boom");
 
-    updateLivesUI();
-    const cx = o.x + o.width/2;
-    spawnCrumbs(cx, GAME_HEIGHT - 5, "brown");
+            updateLivesUI();
+            const cx = o.x + o.width/2;
+            spawnCrumbs(cx, GAME_HEIGHT - 5, "brown");
 
-    if(lives <= 0){
-      endGame();
-      return;
-    }
-  }
-  remove = true;
-}
+            if(lives <= 0){
+              endGame();
+              return;
+            }
+          }
+          remove = true;
+        }
 
         if(!remove) obstacles[writeIndex++] = o;
       }
@@ -885,7 +888,7 @@
       ctx.clearRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
       if(gameState==="loading"){
-        ctx.fillStyle="#080c16";
+        ctx.fillStyle="#1c35a1";
         ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
         drawStars();
 
@@ -913,7 +916,12 @@
         return;
       }
 
-      /* Background (no slide, only fade) */
+      /* Fullscreen Himmel background (fills whole canvas) */
+      if (himmelImg.complete) {
+        ctx.drawImage(himmelImg, 0, 0, GAME_WIDTH, GAME_HEIGHT);
+      }
+
+      /* Original Lundbergs background on top (as before, fade supported) */
       if(bgImg.complete){
         const scale = GAME_WIDTH / bgImg.width;
         const h = bgImg.height * scale;
@@ -930,14 +938,16 @@
         }
 
         if(topY>0){
-          ctx.fillStyle="#080c16";
-          ctx.fillRect(0,0,GAME_WIDTH,topY);
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.drawImage(bgImg, 0, topY, GAME_WIDTH, h);
+          ctx.restore();
+        } else {
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.drawImage(bgImg, 0, topY, GAME_WIDTH, h);
+          ctx.restore();
         }
-
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.drawImage(bgImg, 0, topY, GAME_WIDTH, h);
-        ctx.restore();
       }
 
       drawStars();
