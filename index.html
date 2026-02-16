@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lussekaos på Lundbergs</title>
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- Silkscreen font -->
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Fullscreen mobile fix */
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      touch-action: none;
+      background: #080c16;
+      position: fixed;
+      inset: 0;
+      font-family: 'Silkscreen', monospace;
+      color: #fff;
+    }
+
+    /* Disable text selection everywhere */
+    * {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    #game-container {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+      touch-action: none;
+    }
+
+    /* HUD */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 20;
+      text-shadow: 0 0 4px #000;
+
+      transform: translateY(-120%);
+      opacity: 0;
+      transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+    }
+
+    #overlay.hud-visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #score {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 18px;
+    }
+
+    #score img,
+    #lives img {
+      height: 18px;
+      image-rendering: pixelated;
+    }
+
+    #lives {
+      display: flex;
+      gap: 4px;
+    }
+
+    /* Screens */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 25;
+    }
+
+    .screen-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translateY(-17vh);
+    }
+
+    /* Logo animation */
+    #start-logo .logo-image {
+      width: 70vw;
+      max-width: 380px;
+      image-rendering: pixelated;
+      opacity: 0;
+      clip-path: inset(0 100% 0 0);
+    }
+
+    body.logo-anim #start-logo .logo-image {
+      animation: logoReveal 0.4s ease-out forwards;
+    }
+
+    @keyframes logoReveal {
+      0% { opacity: 1; clip-path: inset(0 100% 0 0); }
+      100% { opacity: 1; clip-path: inset(0 0 0 0); }
+    }
+
+    #start-intro-text {
+      max-width: 320px;
+      font-size: 18px;
+      line-height: 1.3;
+      display: none;
+    }
+
+    #start-intro-text .intro-line {
+      opacity: 0;
+      margin: 6px 0;
+      transition: opacity 0.6s ease-out;
+    }
+
+    #start-intro-text .intro-line.visible {
+      opacity: 1;
+    }
+
+    /* Buttons */
+    #start-btn,
+    #message button {
+      margin-top: 20px;
+      padding: 10px 24px;
+      border: 2px solid #fff;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      border-radius: 6px;
+      font-size: 18px;
+      cursor: pointer;
+      font-family: 'Silkscreen', monospace;
+      text-transform: uppercase;
+    }
+
+    #start-btn {
+      opacity: 0;
+    }
+
+    #start-btn.show {
+      animation: startBtnFade 0.25s ease-out forwards;
+    }
+
+    @keyframes startBtnFade {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Player select */
+    #select-title {
+      font-size: 18px;
+      margin-bottom: 30px;
+      text-shadow: 0 0 6px #000;
+    }
+
+    .player-options {
+      display: flex;
+      gap: 24px;
+      align-items: flex-end;
+    }
+
+    .player-choice {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .player-choice img {
+      width: 25vw;
+      max-width: 140px;
+      height: auto;
+      image-rendering: pixelated;
+    }
+
+    .player-choice span {
+      font-family: 'Silkscreen', monospace !important;
+      font-size: 18px;
+      color: #fff;
+      margin-top: 10px;
+      text-shadow: 0 0 4px #000;
+      text-transform: uppercase;
+    }
+
+    #select-screen {
+      opacity: 0;
+      transition: opacity 0.6s ease-out;
+    }
+
+    #select-screen.visible {
+      opacity: 1;
+    }
+
+    /* Game over */
+    #message-text {
+      font-size: 18px;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    /* Landscape warning */
+    #rotate-warning {
+      position: fixed;
+      inset: 0;
+      background: #080c16;
+      color: white;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 9999;
+    }
+
+    #rotate-stars {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    .rotate-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .rotate-logo {
+      width: 25vw;
+      max-width: 400px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 0 6px #000);
+    }
+
+    .rotate-text {
+      font-size: 18px;
+      text-align: center;
+      text-shadow: 0 0 4px #000;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="game-container">
+    <canvas id="game"></canvas>
+  </div>
+
+  <!-- HUD -->
+  <div id="overlay">
+    <div id="score">
+      <img src="gfx-semla.png">
+      <span id="score-number">0</span>
+    </div>
+    <div id="lives"></div>
+  </div>
+
+  <!-- Start screen -->
+  <div id="start-screen" class="screen">
+    <div class="screen-content">
+      <div id="start-intro-text"></div>
+      <div id="start-logo"><img src="gfx-logo-semla.png" class="logo-image"></div>
+      <button id="start-btn">Starta</button>
+    </div>
+  </div>
+
+  <!-- Player select -->
+  <div id="select-screen" class="screen">
+    <div class="screen-content">
+      <div id="select-title">Välj spelare</div>
+      <div class="player-options">
+        <button class="player-choice" data-player="mattias">
+          <img src="gfx-mattias.png"><span>Mattias</span>
+        </button>
+        <button class="player-choice" data-player="per">
+          <img src="gfx-per.png"><span>Per</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game over -->
+  <div id="message" class="screen">
+    <div class="screen-content">
+      <div id="message-text"></div>
+      <button id="restart-btn">Spela igen</button>
+    </div>
+  </div>
+
+  <!-- Landscape warning -->
+  <div id="rotate-warning">
+    <canvas id="rotate-stars"></canvas>
+    <div class="rotate-content">
+      <img src="gfx-logo-semla.png" class="rotate-logo">
+      <div class="rotate-text">fungerar bara på stående skärmar</div>
+    </div>
+  </div>
+
+  <!-- Music + SFX (Web Audio preferred, HTMLAudio fallback) -->
+  <audio id="gameplay-music" src="gameplay.mp3" preload="auto" loop></audio>
+
+  <!-- Fallback SFX elements -->
+  <audio id="sfx-catch" src="catch.mp3" preload="auto"></audio>
+  <audio id="sfx-oneup" src="1up.mp3" preload="auto"></audio>
+  <audio id="sfx-boom" src="boom.mp3" preload="auto"></audio>
+  <audio id="sfx-gameover" src="gameover.mp3" preload="auto"></audio>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('selectstart', e => e.preventDefault());
+
+    const scoreNumberEl = document.getElementById("score-number");
+    const livesEl = document.getElementById("lives");
+    const messageEl = document.getElementById("message");
+    const messageTextEl = document.getElementById("message-text");
+
+    const startScreenEl = document.getElementById("start-screen");
+    const selectScreenEl = document.getElementById("select-screen");
+    const startBtn = document.getElementById("start-btn");
+    const restartBtn = document.getElementById("restart-btn");
+    const playerChoiceButtons = document.querySelectorAll(".player-choice");
+
+    const startLogoEl = document.getElementById("start-logo");
+    const startIntroEl = document.getElementById("start-intro-text");
+    const overlayEl = document.getElementById("overlay");
+
+    const gameplayMusic = document.getElementById("gameplay-music");
+
+    /* --- Web Audio for all short SFX --- */
+    let sfxCtx = null;
+    const sfxBuffers = {};  // name -> AudioBuffer
+    let sfxLoading = false;
+
+    const SFX_FILES = {
+      catch: "catch.mp3",
+      oneup: "1up.mp3",
+      boom: "boom.mp3",
+      gameover: "gameover.mp3"
+    };
+
+    // HTMLAudio fallback for each SFX
+    const sfxFallbackEls = {
+      catch: document.getElementById("sfx-catch"),
+      oneup: document.getElementById("sfx-oneup"),
+      boom: document.getElementById("sfx-boom"),
+      gameover: document.getElementById("sfx-gameover")
+    };
+
+    function ensureSfxContext() {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return; // no support
+      if (!sfxCtx) {
+        sfxCtx = new AudioCtx();
+      }
+      if (sfxCtx.state === "suspended") {
+        sfxCtx.resume();
+      }
+      if (!sfxLoading && Object.keys(sfxBuffers).length === 0) {
+        loadAllSfx();
+      }
+    }
+
+    async function loadAllSfx() {
+      if (!sfxCtx) return;
+      sfxLoading = true;
+      try {
+        const entries = Object.entries(SFX_FILES);
+        for (const [name, url] of entries) {
+          const res = await fetch(url);
+          if (!res.ok) {
+            console.warn("Failed to fetch SFX:", name, res.status);
+            continue;
+          }
+          const arrayBuf = await res.arrayBuffer();
+          const buffer = await sfxCtx.decodeAudioData(arrayBuf);
+          sfxBuffers[name] = buffer;
+        }
+      } catch (e) {
+        console.warn("Failed loading SFX", e);
+      } finally {
+        sfxLoading = false;
+      }
+    }
+
+    function playSfx(name) {
+      // Prefer Web Audio if context + buffer are ready
+      if (sfxCtx && sfxBuffers[name]) {
+        const src = sfxCtx.createBufferSource();
+        src.buffer = sfxBuffers[name];
+        src.connect(sfxCtx.destination);
+        src.start(0);
+        return;
+      }
+
+      // Fallback to HTMLAudio
+      const el = sfxFallbackEls[name];
+      if (el) {
+        try {
+          el.currentTime = 0;
+          el.play();
+        } catch (e) {
+          // Ignore autoplay issues
+        }
+      }
+    }
+
+    /* Landscape warning */
+    const rotateWarningEl   = document.getElementById("rotate-warning");
+    const rotateStarsCanvas = document.getElementById("rotate-stars");
+    const rotateStarsCtx    = rotateStarsCanvas.getContext("2d");
+
+    const GAME_WIDTH = 360;
+    const GAME_HEIGHT = 640;
+
+    /* Resize canvas to fill screen */
+    function resize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+
+      canvas.width = w;
+      canvas.height = h;
+
+      const scaleX = w / GAME_WIDTH;
+      const scaleY = h / GAME_HEIGHT;
+      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+    }
+    window.addEventListener("resize", () => {
+      resize();
+      checkOrientation();
+    });
+    resize();
+
+    /* Images */
+    const playerMattiasImg = new Image();
+    const playerPerImg = new Image();
+    const bunImg = new Image();
+    const enemyImg = new Image();
+    const bgImg = new Image();
+    const santaImg = new Image();
+    const luciaImg = new Image();
+
+    const SANTA_SCALE = 0.25;
+    let SANTA_WIDTH = 0;
+    let SANTA_HEIGHT = 0;
+
+    let imagesLoaded = 0;
+    const TOTAL_IMAGES = 7;
+    let assetsReady = false;
+
+    function onAssetLoaded() {
+      imagesLoaded++;
+      if (!assetsReady && imagesLoaded >= TOTAL_IMAGES) {
+        assetsReady = true;
+      }
+    }
+
+    playerMattiasImg.onload = onAssetLoaded;
+    playerPerImg.onload     = onAssetLoaded;
+    bunImg.onload           = onAssetLoaded;
+    enemyImg.onload         = onAssetLoaded;
+    bgImg.onload            = onAssetLoaded;
+    luciaImg.onload         = onAssetLoaded;
+
+    santaImg.onload = () => {
+      SANTA_WIDTH  = santaImg.width  * SANTA_SCALE;
+      SANTA_HEIGHT = santaImg.height * SANTA_SCALE;
+      onAssetLoaded();
+    };
+
+    playerMattiasImg.src = "gfx-mattias.png";
+    playerPerImg.src     = "gfx-per.png";
+    bunImg.src           = "gfx-semla.png";
+    enemyImg.src         = "gfx-bun.png";
+    bgImg.src            = "gfx-lundbergs-spring.png";
+    santaImg.src         = "gfx-empty-1.png";
+    luciaImg.src         = "gfx-empty-1.png";
+
+    let currentPlayerImg = playerMattiasImg;
+
+    /* Santa / Lucia state */
+    let santa = {
+      active: false,
+      img: santaImg,
+      x: 0,
+      y: 0,
+      speed: 80
+    };
+    let santaTimer = 0;
+    let nextSantaTime = 4 + Math.random()*8;
+
+    /* Stars (main game) */
+    const STAR_COUNT = 40;
+    let stars = [];
+
+    function initStars() {
+      stars = [];
+      for (let i = 0; i < STAR_COUNT; i++) {
+        stars.push({
+          x: Math.random() * GAME_WIDTH,
+          y: Math.random() * GAME_HEIGHT,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.5 + Math.random() * 0.8
+        });
+      }
+    }
+
+    function updateStars(dt) {
+      for (let s of stars) s.phase += s.speed * dt;
+    }
+
+    function drawStars() {
+      for (let s of stars) {
+        const b = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(s.phase));
+        ctx.fillStyle = `rgba(255,255,255,${b})`;
+        ctx.fillRect(s.x, s.y, 2, 2);
+      }
+    }
+
+    /* Crumbs */
+    let crumbs = [];
+    function spawnCrumbs(x,y,color){
+      for(let i=0;i<8;i++){
+        crumbs.push({
+          x, y,
+          vx:(Math.random()-0.5)*120,
+          vy:(Math.random()-0.5)*120,
+          life:0.6+Math.random()*0.3,
+          color
+        });
+      }
+    }
+
+    function updateCrumbs(dt){
+      for(let c of crumbs){
+        c.x+=c.vx*dt;
+        c.y+=c.vy*dt;
+        c.life-=dt;
+      }
+      crumbs=crumbs.filter(c=>c.life>0);
+    }
+
+    /* Music */
+    function startGameplayMusic() {
+      gameplayMusic.volume = 0.8;
+      gameplayMusic.currentTime = 0;
+      gameplayMusic.play().catch(()=>{});
+    }
+
+    function stopGameplayMusic() {
+      gameplayMusic.pause();
+      gameplayMusic.currentTime = 0;
+    }
+
+    /* Background fade-in intro */
+    let bgIntro = {
+      active: false,
+      timer: 0,
+      duration: 1.2
+    };
+
+    /* Game state */
+    let lastTime = 0;
+    let player;
+    let obstacles;
+    let score;
+    let lives;
+    let timeAlive;
+
+    let spawnTimer = 0;
+    let spawnInterval = 1.0;
+
+    let holdingLeft = false;
+    let holdingRight = false;
+
+    const PLAYER_SPEED = 220;
+
+    let gameState = "loading";
+    let loadingTimer = 0;
+    const MIN_LOADING_TIME = 0.8;
+
+    const introLines = [
+      "Fettisdag på Lundbergs",
+      "Fånga de nygräddade semlorna, innan de hamnar på marken.",
+      "Se upp för de som inte hunnit få fyllning."
+    ];
+
+    function playIntroSequence() {
+      gameState = "intro";
+      startScreenEl.style.display = "flex";
+      selectScreenEl.style.display = "none";
+      messageEl.style.display = "none";
+
+      startIntroEl.innerHTML = "";
+      startIntroEl.style.display = "block";
+
+      startLogoEl.style.display = "none";
+      startBtn.style.display    = "none";
+
+      const delay = 2800;
+
+      introLines.forEach((line, idx) => {
+        const p = document.createElement("p");
+        p.className = "intro-line";
+        p.textContent = line;
+        startIntroEl.appendChild(p);
+
+        setTimeout(() => {
+          p.classList.add("visible");
+          if(idx === introLines.length-1){
+            setTimeout(()=> setGameState("select"), 5000);
+          }
+        }, idx * delay);
+      });
+    }
+
+    function updateLivesUI() {
+      livesEl.innerHTML="";
+      for(let i=0;i<lives;i++){
+        const img=document.createElement("img");
+        img.src="gfx-semla-heart.png";
+        livesEl.appendChild(img);
+      }
+    }
+
+    function resetGame(){
+      player={
+        x:GAME_WIDTH/2,
+        y:GAME_HEIGHT-55,
+        width:70,
+        height:110
+      };
+
+      obstacles=[];
+      score=0;
+      lives=3;
+      timeAlive=0;
+      spawnTimer=0;
+
+      crumbs=[];
+      updateLivesUI();
+      scoreNumberEl.textContent=score;
+      initStars();
+
+      messageEl.style.display="none";
+    }
+
+    function runStartScreenAnimations() {
+      document.body.classList.remove("logo-anim");
+      startBtn.classList.remove("show");
+
+      setTimeout(()=> document.body.classList.add("logo-anim"), 500);
+      setTimeout(()=> startBtn.classList.add("show"), 800);
+    }
+
+    function setGameState(state){
+      gameState=state;
+
+      startScreenEl.style.display =
+        (state==="start"||state==="intro") ? "flex" : "none";
+
+      if(state==="select"){
+        selectScreenEl.style.display="flex";
+        selectScreenEl.classList.remove("visible");
+        setTimeout(()=> selectScreenEl.classList.add("visible"), 50);
+      } else {
+        selectScreenEl.classList.remove("visible");
+        selectScreenEl.style.display="none";
+      }
+
+      if(state==="playing"){
+        overlayEl.classList.add("hud-visible");
+      } else {
+        overlayEl.classList.remove("hud-visible");
+      }
+
+      if(state==="start"){
+        startIntroEl.style.display="none";
+        startIntroEl.innerHTML="";
+        startLogoEl.style.display="block";
+        startBtn.style.display="inline-block";
+        runStartScreenAnimations();
+      }
+
+      if(state!=="gameover"){
+        messageEl.style.display="none";
+      }
+    }
+
+    function spawnObstacle() {
+      const enemy = Math.random() < 0.2;
+      obstacles.push({
+        x: Math.random() * (GAME_WIDTH - 28),
+        y: -28,
+        width: 28,
+        height: 28,
+        speed: 120 + Math.random() * 60,
+        type: enemy ? "enemy" : "bun"
+      });
+    }
+
+    function hitOverlap(p, o) {
+      const w = p.width * 0.6;
+      const h = p.height * 0.7;
+      const x = p.x - w/2;
+      const y = p.y - h/2;
+      return !(x+w < o.x || x > o.x+o.width || y+h < o.y || y > o.y+o.height);
+    }
+
+    function endGame(){
+      setGameState("gameover");
+      stopGameplayMusic();
+
+      playSfx("gameover");
+
+      for(let o of obstacles){
+        const cx=o.x+o.width/2;
+        const cy=o.y+o.height/2;
+        const color=(o.type==="bun") ? "orange" : "brown";
+        spawnCrumbs(cx,cy,color);
+      }
+      obstacles=[];
+
+      setTimeout(()=>{
+        if(gameState==="gameover"){
+          messageTextEl.innerHTML=`Du lyckades fånga<br>${score} lussekatter`;
+          messageEl.style.display="flex";
+        }
+      },900);
+    }
+
+    function updateSanta(dt){
+      if(!(gameState==="start"||gameState==="intro"||gameState==="select")){
+        santa.active=false;
+        return;
+      }
+
+      if(!santa.active){
+        santaTimer+=dt;
+        if(santaTimer>=nextSantaTime){
+          const useSanta = Math.random() < 0.5;
+          santa.img = useSanta ? santaImg : luciaImg;
+
+          const w = santa.img.width  * SANTA_SCALE || 80;
+          const h = santa.img.height * SANTA_SCALE || 32;
+
+          SANTA_WIDTH = w;
+          SANTA_HEIGHT = h;
+
+          santa.active = true;
+          santa.x = GAME_WIDTH + w;
+          santa.y = GAME_HEIGHT - 20 - h;
+          santaTimer = 0;
+          nextSantaTime = 4 + Math.random()*8;
+        }
+      }
+      else {
+        santa.x -= santa.speed * dt;
+        if(santa.x < -SANTA_WIDTH - 20){
+          santa.active = false;
+        }
+      }
+    }
+
+    function updateGame(dt){
+      timeAlive += dt;
+      const difficulty = Math.min(timeAlive/30,1);
+      spawnInterval = 1.0 - difficulty * 0.6;
+
+      if(holdingLeft && !holdingRight)  player.x -= PLAYER_SPEED * dt;
+      if(holdingRight && !holdingLeft) player.x += PLAYER_SPEED * dt;
+
+      const half = player.width/2;
+      if(player.x < half) player.x = half;
+      if(player.x > GAME_WIDTH - half) player.x = GAME_WIDTH - half;
+
+      spawnTimer += dt;
+      if(spawnTimer >= spawnInterval){
+        spawnTimer -= spawnInterval;
+        spawnObstacle();
+      }
+
+      const speedBoost = 120 + (420 - 120)*difficulty;
+
+      let writeIndex = 0;
+      for(let i=0; i<obstacles.length; i++){
+        const o = obstacles[i];
+
+        o.y += (o.speed + speedBoost*0.5) * dt;
+        let remove = false;
+
+        if(hitOverlap(player, o)){
+          const cx=o.x+o.width/2;
+          const cy=o.y+o.height/2;
+
+          if(o.type==="bun"){
+            score++;
+            scoreNumberEl.textContent=score;
+
+            playSfx("catch");
+            spawnCrumbs(cx,cy,"orange");
+
+            if(score%10===0){
+              lives++;
+              playSfx("oneup");
+              updateLivesUI();
+            }
+          } else {
+            lives--;
+            playSfx("boom");
+            spawnCrumbs(cx,cy,"brown");
+            updateLivesUI();
+
+            if(lives<=0){
+              endGame();
+              return;
+            }
+          }
+          remove = true;
+        }
+       else if(o.y > GAME_HEIGHT){
+  if(o.type==="bun"){
+    lives--;
+
+    // NEW: play boom when a lussekatt hits the ground
+    playSfx("boom");
+
+    updateLivesUI();
+    const cx = o.x + o.width/2;
+    spawnCrumbs(cx, GAME_HEIGHT - 5, "brown");
+
+    if(lives <= 0){
+      endGame();
+      return;
+    }
+  }
+  remove = true;
+}
+
+        if(!remove) obstacles[writeIndex++] = o;
+      }
+      obstacles.length = writeIndex;
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+
+      if(gameState==="loading"){
+        ctx.fillStyle="#080c16";
+        ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+        drawStars();
+
+        ctx.save();
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.fillStyle="#fff";
+        ctx.font="18px Silkscreen, monospace";
+        ctx.textBaseline="middle";
+
+        const base="Hämtar mandelmassa";
+        const dotsCount = Math.floor(loadingTimer*2)%4;
+        const dots=".".repeat(dotsCount);
+
+        const cx = canvas.width/2;
+        const cy = canvas.height/2;
+
+        ctx.textAlign="center";
+        ctx.fillText(base,cx,cy);
+
+        const baseW = ctx.measureText(base).width;
+        ctx.textAlign="left";
+        ctx.fillText(dots, cx + baseW/2 + 4, cy);
+
+        ctx.restore();
+        return;
+      }
+
+      /* Background (no slide, only fade) */
+      if(bgImg.complete){
+        const scale = GAME_WIDTH / bgImg.width;
+        const h = bgImg.height * scale;
+        const finalY = GAME_HEIGHT - h;
+
+        let topY = finalY;
+        let alpha = 1;
+
+        if(bgIntro.active){
+          const t = Math.min(bgIntro.timer / bgIntro.duration, 1);
+          const ease = 1 - Math.pow(1 - t, 3);
+          topY = finalY;
+          alpha = ease;
+        }
+
+        if(topY>0){
+          ctx.fillStyle="#080c16";
+          ctx.fillRect(0,0,GAME_WIDTH,topY);
+        }
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(bgImg, 0, topY, GAME_WIDTH, h);
+        ctx.restore();
+      }
+
+      drawStars();
+
+      if((gameState==="start"||gameState==="intro"||gameState==="select") && santa.active){
+        ctx.drawImage(santa.img, santa.x, santa.y, SANTA_WIDTH, SANTA_HEIGHT);
+      }
+
+      for(let c of crumbs){
+        ctx.fillStyle = c.color==="orange" ? "#ffb746" : "#8c5a32";
+        ctx.fillRect(Math.round(c.x), Math.round(c.y), 3, 3);
+      }
+
+      if(gameState==="playing" || gameState==="gameover"){
+        ctx.drawImage(
+          currentPlayerImg,
+          player.x - player.width/2,
+          player.y - player.height/2,
+          player.width,
+          player.height
+        );
+      }
+
+      if(gameState==="playing"){
+        for(let o of obstacles){
+          const img = (o.type==="enemy") ? enemyImg : bunImg;
+          ctx.drawImage(img, o.x, o.y, o.width, o.height);
+        }
+      }
+    }
+
+    function loop(t){
+      const dt = (t - lastTime) / 1000 || 0;
+      lastTime = t;
+
+      updateStars(dt);
+      updateSanta(dt);
+      updateCrumbs(dt);
+
+      if(bgIntro.active){
+        bgIntro.timer += dt;
+        if(bgIntro.timer >= bgIntro.duration){
+          bgIntro.active = false;
+        }
+      }
+
+      if(gameState==="loading"){
+        loadingTimer += dt;
+
+        if(assetsReady && loadingTimer > MIN_LOADING_TIME){
+          resetGame();
+          bgIntro.active = true;
+          bgIntro.timer = 0;
+          setGameState("start");
+        }
+      }
+
+      if(gameState==="playing"){
+        updateGame(dt);
+      }
+
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    /* INPUT */
+    canvas.addEventListener("pointerdown", e => {
+      const rect = canvas.getBoundingClientRect();
+      const xGame = (e.clientX - rect.left) / rect.width * GAME_WIDTH;
+
+      holdingLeft = (xGame < GAME_WIDTH/2);
+      holdingRight = !holdingLeft;
+
+      ensureSfxContext();
+    });
+
+    window.addEventListener("pointerup", ()=>{
+      holdingLeft = false;
+      holdingRight = false;
+    });
+
+    window.addEventListener("keydown", e => {
+      if(e.key==="ArrowLeft"||e.key==="a") holdingLeft=true;
+      if(e.key==="ArrowRight"||e.key==="d") holdingRight=true;
+      if(e.key===" " && gameState==="gameover"){
+        resetGame();
+        setGameState("select");
+      }
+    });
+
+    window.addEventListener("keyup", e => {
+      if(e.key==="ArrowLeft"||e.key==="a") holdingLeft=false;
+      if(e.key==="ArrowRight"||e.key==="d") holdingRight=false;
+    });
+
+    restartBtn.addEventListener("click", () => {
+      ensureSfxContext();
+      resetGame();
+      setGameState("select");
+    });
+
+    startBtn.addEventListener("click", () => {
+      ensureSfxContext();
+      playIntroSequence();
+    });
+
+    playerChoiceButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        ensureSfxContext();
+        currentPlayerImg = (btn.dataset.player==="per") ? playerPerImg : playerMattiasImg;
+        resetGame();
+        setGameState("playing");
+        startGameplayMusic();
+      });
+    });
+
+    /* --- LANDSCAPE WARNING STARFIELD --- */
+    let rotateStars = [];
+    const ROTATE_STAR_COUNT = 40;
+    let lastRotateTime = 0;
+
+    function initRotateStars(){
+      rotateStars = [];
+      for (let i=0; i<ROTATE_STAR_COUNT; i++){
+        rotateStars.push({
+          x: Math.random()*rotateStarsCanvas.width,
+          y: Math.random()*rotateStarsCanvas.height,
+          phase: Math.random()*Math.PI*2,
+          speed: 0.5 + Math.random()*0.8
+        });
+      }
+    }
+
+    function resizeRotateStars(){
+      rotateStarsCanvas.width = window.innerWidth;
+      rotateStarsCanvas.height = window.innerHeight;
+      initRotateStars();
+    }
+
+    function drawRotateStars(dt){
+      rotateStarsCtx.clearRect(0,0,rotateStarsCanvas.width,rotateStarsCanvas.height);
+
+      rotateStars.forEach(star=>{
+        star.phase += star.speed * dt;
+        const b = 0.2 + 0.8 * (0.5 + 0.5*Math.sin(star.phase));
+        rotateStarsCtx.fillStyle = `rgba(255,255,255,${b})`;
+        rotateStarsCtx.fillRect(star.x, star.y, 2, 2);
+      });
+    }
+
+    function rotateStarsLoop(t){
+      const dt=(t-lastRotateTime)/1000 || 0;
+      lastRotateTime=t;
+
+      if(rotateWarningEl.style.display==="flex"){
+        drawRotateStars(dt);
+      }
+      requestAnimationFrame(rotateStarsLoop);
+    }
+    requestAnimationFrame(rotateStarsLoop);
+
+    function checkOrientation(){
+      const isLandscape = window.innerWidth > window.innerHeight;
+      if(isLandscape){
+        rotateWarningEl.style.display="flex";
+        resizeRotateStars();
+      } else {
+        rotateWarningEl.style.display="none";
+      }
+    }
+
+    checkOrientation();
+    window.addEventListener("orientationchange", checkOrientation);
+
+    /* START */
+    initStars();
+    requestAnimationFrame(loop);
+
+  </script>
+</body>
+</html>
