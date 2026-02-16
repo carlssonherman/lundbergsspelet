@@ -622,7 +622,6 @@
     const MIN_LOADING_TIME = 0.8;
 
     const introLines = [
-      "Fettisdag på Lundbergs",
       "Fånga de nygräddade semlorna, innan de hamnar på marken.",
       "Se upp för de som inte hunnit få fyllning."
     ];
@@ -639,7 +638,7 @@
       startLogoEl.style.display = "none";
       startBtn.style.display    = "none";
 
-      const delay = 2800;
+      const delay = 2500;
 
       introLines.forEach((line, idx) => {
         const p = document.createElement("p");
@@ -650,7 +649,7 @@
         setTimeout(() => {
           p.classList.add("visible");
           if(idx === introLines.length-1){
-            setTimeout(()=> setGameState("select"), 5000);
+            setTimeout(()=> setGameState("select"), 3000);
           }
         }, idx * delay);
       });
